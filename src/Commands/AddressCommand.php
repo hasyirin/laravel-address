@@ -1,12 +1,12 @@
 <?php
 
-namespace VendorName\Skeleton\Commands;
+namespace Hasyirin\Address\Commands;
 
 use Illuminate\Console\Command;
 
-class SkeletonCommand extends Command
+class AddressCommand extends Command
 {
-    public $signature = 'skeleton';
+    public $signature = 'laravel-address';
 
     public $description = 'My command';
 
