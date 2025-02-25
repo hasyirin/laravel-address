@@ -2,9 +2,9 @@
 
 namespace Hasyirin\Address\Tests;
 
+use Hasyirin\Address\AddressServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
-use Hasyirin\Address\AddressServiceProvider;
 
 class TestCase extends Orchestra
 {
