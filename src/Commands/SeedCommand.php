@@ -12,7 +12,7 @@ use Illuminate\Support\Collection;
 class SeedCommand extends Command
 {
     public string $path {
-        get => is_dir((base_path('data'))) ? base_path('data') : __DIR__ . '/../../data';
+        get => is_dir((base_path('data'))) ? base_path('data') : __DIR__.'/../../data';
     }
 
     public $signature = 'address:seed';
