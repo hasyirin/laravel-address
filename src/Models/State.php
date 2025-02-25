@@ -8,7 +8,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 
+/**
+ * @property int $id
+ * @property int $country_id
+ * @property string $code
+ * @property string $name
+ * @property Country $country
+ * @property Collection $districts
+ * @property Collection $addresses
+ */
 class State extends Model
 {
     use SoftDeletes;

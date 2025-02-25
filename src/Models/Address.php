@@ -13,6 +13,26 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use UnitEnum;
 
+/**
+ * @property int $id
+ * @property string $addressable_type
+ * @property int $addressable_id
+ * @property int $post_office_id
+ * @property int $country_id
+ * @property int $state_id
+ * @property array $types
+ * @property string $line_one
+ * @property string $line_two
+ * @property string $line_three
+ * @property string $postcode
+ * @property float $latitude
+ * @property float $longitude
+ * @property array $properties
+ * @property Model $addressable
+ * @property ?Country $country
+ * @property ?State $state
+ * @property ?PostOffice $postOffice
+ */
 class Address extends Model
 {
     use SoftDeletes;

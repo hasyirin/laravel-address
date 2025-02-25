@@ -8,6 +8,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property int $id
+ * @property int $district_id
+ * @property string $code
+ * @property string $name
+ * @property District $district
+ */
 class Subdistrict extends Model
 {
     use SoftDeletes;
