@@ -13,7 +13,7 @@ return new class extends Migration
 
     public function __construct()
     {
-        $this->table = config('address.tables.district');
+        $this->table = config('address.tables.districts');
         $this->stateModel = config('address.models.state');
     }
 

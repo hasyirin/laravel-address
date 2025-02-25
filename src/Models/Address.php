@@ -49,7 +49,7 @@ class Address extends Model
     {
         parent::__construct($attributes);
 
-        $this->table = config('address.tables.address', parent::getTable());
+        $this->table = config('address.tables.addresses', parent::getTable());
     }
 
     public function addressable(): MorphTo

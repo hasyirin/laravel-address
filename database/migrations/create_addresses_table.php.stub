@@ -15,7 +15,7 @@ return new class extends Migration
 
     public function __construct()
     {
-        $this->table = config('address.tables.address');
+        $this->table = config('address.tables.addresses');
         $this->countryModel = config('address.models.country');
         $this->stateModel = config('address.models.state');
         $this->postOfficeModel = config('address.models.post-office');
