@@ -2,9 +2,9 @@
 
 namespace Hasyirin\Address;
 
+use Hasyirin\Address\Commands\AddressCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use Hasyirin\Address\Commands\AddressCommand;
 
 class AddressServiceProvider extends PackageServiceProvider
 {
