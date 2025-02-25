@@ -1,0 +1,46 @@
+[
+    {
+        "code": "01",
+        "name": "Batang Padang"
+    },
+    {
+        "code": "02",
+        "name": "Manjung"
+    },
+    {
+        "code": "03",
+        "name": "Kinta"
+    },
+    {
+        "code": "04",
+        "name": "Kerian"
+    },
+    {
+        "code": "05",
+        "name": "Kuala Kangsar"
+    },
+    {
+        "code": "06",
+        "name": "Larut Matang"
+    },
+    {
+        "code": "07",
+        "name": "Hilir Perak"
+    },
+    {
+        "code": "08",
+        "name": "Hulu Perak"
+    },
+    {
+        "code": "09",
+        "name": "Selama"
+    },
+    {
+        "code": "10",
+        "name": "Perak Tengah"
+    },
+    {
+        "code": "11",
+        "name": "Kampar"
+    }
+]

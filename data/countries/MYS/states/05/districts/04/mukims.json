@@ -1,0 +1,114 @@
+[
+    {
+        "code": "01",
+        "name": "Batu Hampar"
+    },
+    {
+        "code": "02",
+        "name": "Bongek"
+    },
+    {
+        "code": "03",
+        "name": "Chembong"
+    },
+    {
+        "code": "04",
+        "name": "Chengkau"
+    },
+    {
+        "code": "05",
+        "name": "Gadong"
+    },
+    {
+        "code": "06",
+        "name": "Kundor"
+    },
+    {
+        "code": "07",
+        "name": "Legong Ilir"
+    },
+    {
+        "code": "08",
+        "name": "Legong Ulu"
+    },
+    {
+        "code": "09",
+        "name": "Miku"
+    },
+    {
+        "code": "10",
+        "name": "Nerasau"
+    },
+    {
+        "code": "11",
+        "name": "Pedas"
+    },
+    {
+        "code": "12",
+        "name": "Pilin"
+    },
+    {
+        "code": "13",
+        "name": "Selemak"
+    },
+    {
+        "code": "14",
+        "name": "Semerbok"
+    },
+    {
+        "code": "15",
+        "name": "Spri"
+    },
+    {
+        "code": "16",
+        "name": "Tanjong Keling"
+    },
+    {
+        "code": "17",
+        "name": "Titian Bintangor"
+    },
+    {
+        "code": "40",
+        "name": "Bandar Rembau"
+    },
+    {
+        "code": "70",
+        "name": "Pekan Kampong Batu"
+    },
+    {
+        "code": "71",
+        "name": "Pekan Kota"
+    },
+    {
+        "code": "72",
+        "name": "Pekan Lubok China"
+    },
+    {
+        "code": "73",
+        "name": "Pekan Pedas"
+    },
+    {
+        "code": "74",
+        "name": "Pekan Chembong"
+    },
+    {
+        "code": "75",
+        "name": "Pekan Rembau"
+    },
+    {
+        "code": "76",
+        "name": "Pekan Chengkau"
+    },
+    {
+        "code": "77",
+        "name": "Pekan Seri Kota"
+    },
+    {
+        "code": "78",
+        "name": "Pekan Seri Kendong"
+    },
+    {
+        "code": "79",
+        "name": "Pekan Merbau Sembilan"
+    }
+]

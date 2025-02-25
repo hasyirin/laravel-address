@@ -1,0 +1,38 @@
+[
+    {
+        "code": "01",
+        "name": "Klang"
+    },
+    {
+        "code": "02",
+        "name": "Kuala Langat"
+    },
+    {
+        "code": "04",
+        "name": "Kuala Selangor"
+    },
+    {
+        "code": "05",
+        "name": "Sabak Bernam"
+    },
+    {
+        "code": "06",
+        "name": "Ulu Langat"
+    },
+    {
+        "code": "07",
+        "name": "Ulu Selangor"
+    },
+    {
+        "code": "08",
+        "name": "Petaling"
+    },
+    {
+        "code": "09",
+        "name": "Gombak"
+    },
+    {
+        "code": "10",
+        "name": "Sepang"
+    }
+]

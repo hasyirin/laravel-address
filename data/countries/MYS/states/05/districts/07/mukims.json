@@ -1,0 +1,62 @@
+[
+    {
+        "code": "01",
+        "name": "Jelai"
+    },
+    {
+        "code": "02",
+        "name": "Kuala Jempol"
+    },
+    {
+        "code": "03",
+        "name": "Rompin"
+    },
+    {
+        "code": "04",
+        "name": "Serting Hilir"
+    },
+    {
+        "code": "05",
+        "name": "Serting Ulu"
+    },
+    {
+        "code": "40",
+        "name": "Bandar Serting"
+    },
+    {
+        "code": "41",
+        "name": "Bandar Bahau"
+    },
+    {
+        "code": "42",
+        "name": "Bandar Seri Jempol"
+    },
+    {
+        "code": "70",
+        "name": "Pekan Bahau"
+    },
+    {
+        "code": "71",
+        "name": "Pekan Batu Kikir"
+    },
+    {
+        "code": "72",
+        "name": "Pekan Kuala Jelai"
+    },
+    {
+        "code": "73",
+        "name": "Pekan Rompin"
+    },
+    {
+        "code": "74",
+        "name": "Pekan Ladang Geddes"
+    },
+    {
+        "code": "75",
+        "name": "Pekan Mahsan"
+    },
+    {
+        "code": "76",
+        "name": "Pekan Serting Tengah"
+    }
+]

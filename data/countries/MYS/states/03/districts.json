@@ -1,0 +1,46 @@
+[
+    {
+        "code": "01",
+        "name": "Bachok"
+    },
+    {
+        "code": "02",
+        "name": "Kota Bharu"
+    },
+    {
+        "code": "03",
+        "name": "Machang"
+    },
+    {
+        "code": "04",
+        "name": "Pasir Mas"
+    },
+    {
+        "code": "05",
+        "name": "Pasir Puteh"
+    },
+    {
+        "code": "06",
+        "name": "Tanah Merah"
+    },
+    {
+        "code": "07",
+        "name": "Tumpat"
+    },
+    {
+        "code": "08",
+        "name": "Gua Musang"
+    },
+    {
+        "code": "10",
+        "name": "Kuala Krai"
+    },
+    {
+        "code": "11",
+        "name": "Jeli"
+    },
+    {
+        "code": "12",
+        "name": "Kecil Lojing"
+    }
+]

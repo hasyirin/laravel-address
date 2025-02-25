@@ -1,0 +1,170 @@
+[
+    {
+        "code": "01",
+        "name": "Ampangan"
+    },
+    {
+        "code": "02",
+        "name": "Labu"
+    },
+    {
+        "code": "03",
+        "name": "Lenggeng"
+    },
+    {
+        "code": "04",
+        "name": "Pantai"
+    },
+    {
+        "code": "05",
+        "name": "Rantau"
+    },
+    {
+        "code": "06",
+        "name": "Rasah"
+    },
+    {
+        "code": "07",
+        "name": "Seremban"
+    },
+    {
+        "code": "08",
+        "name": "Setul"
+    },
+    {
+        "code": "40",
+        "name": "Bandar Seremban"
+    },
+    {
+        "code": "41",
+        "name": "Bandar Seremban 3"
+    },
+    {
+        "code": "42",
+        "name": "Bandar Seremban Utama"
+    },
+    {
+        "code": "43",
+        "name": "Bandar Mantin Utama"
+    },
+    {
+        "code": "44",
+        "name": "Bandar Baru Enstek"
+    },
+    {
+        "code": "45",
+        "name": "Bandar Baru Kota Seriemas"
+    },
+    {
+        "code": "46",
+        "name": "Bandar Nilai Utama"
+    },
+    {
+        "code": "47",
+        "name": "Bandar Sri Sendayan"
+    },
+    {
+        "code": "70",
+        "name": "Pekan Broga"
+    },
+    {
+        "code": "71",
+        "name": "Pekan Ulu Beranang"
+    },
+    {
+        "code": "72",
+        "name": "Pekan Labu"
+    },
+    {
+        "code": "73",
+        "name": "Pekan Lenggeng"
+    },
+    {
+        "code": "74",
+        "name": "Pekan Mambau"
+    },
+    {
+        "code": "75",
+        "name": "Pekan Nilai"
+    },
+    {
+        "code": "76",
+        "name": "Pekan Mantin"
+    },
+    {
+        "code": "77",
+        "name": "Pekan Pajam"
+    },
+    {
+        "code": "78",
+        "name": "Pekan Rantau"
+    },
+    {
+        "code": "79",
+        "name": "Pekan Tiroi"
+    },
+    {
+        "code": "80",
+        "name": "Pekan Pancor"
+    },
+    {
+        "code": "81",
+        "name": "Pekan Taman Seremban"
+    },
+    {
+        "code": "82",
+        "name": "Pekan Rahang Baru"
+    },
+    {
+        "code": "83",
+        "name": "Pekan Paroi"
+    },
+    {
+        "code": "84",
+        "name": "Pekan Bukit Kepayang"
+    },
+    {
+        "code": "85",
+        "name": "Pekan Dusun Setia"
+    },
+    {
+        "code": "86",
+        "name": "Pekan Sungai Gadut"
+    },
+    {
+        "code": "87",
+        "name": "Pekan Bukti"
+    },
+    {
+        "code": "88",
+        "name": "Pekan Sikamat"
+    },
+    {
+        "code": "89",
+        "name": "Pekan Setul"
+    },
+    {
+        "code": "90",
+        "name": "Pekan Shah Bandar"
+    },
+    {
+        "code": "91",
+        "name": "Pekan Ulu Temiang"
+    },
+    {
+        "code": "92",
+        "name": "Pekan Paroi Jaya"
+    },
+    {
+        "code": "93",
+        "name": "Pekan Rasah Jaya"
+    },
+    {
+        "code": "94",
+        "name": "Pekan Senawang"
+    },
+    {
+        "code": "95",
+        "name": "Pekan Seremban Jaya"
+    }
+]

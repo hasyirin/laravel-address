@@ -1,0 +1,50 @@
+[
+    {
+        "code": "01",
+        "name": "Kota Setar"
+    },
+    {
+        "code": "02",
+        "name": "Kubang Pasu"
+    },
+    {
+        "code": "03",
+        "name": "Padang Terap"
+    },
+    {
+        "code": "04",
+        "name": "Langkawi"
+    },
+    {
+        "code": "05",
+        "name": "Kuala Muda"
+    },
+    {
+        "code": "06",
+        "name": "Yan"
+    },
+    {
+        "code": "07",
+        "name": "Sik"
+    },
+    {
+        "code": "08",
+        "name": "Baling"
+    },
+    {
+        "code": "09",
+        "name": "Kulim"
+    },
+    {
+        "code": "10",
+        "name": "Bandar Baharu"
+    },
+    {
+        "code": "11",
+        "name": "Pendang"
+    },
+    {
+        "code": "12",
+        "name": "Pokok Sena"
+    }
+]

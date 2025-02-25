@@ -1,0 +1,42 @@
+[
+    {
+        "code": "01",
+        "name": "Batu Pahat"
+    },
+    {
+        "code": "02",
+        "name": "Johor Bahru"
+    },
+    {
+        "code": "03",
+        "name": "Kluang"
+    },
+    {
+        "code": "04",
+        "name": "Kota Tinggi"
+    },
+    {
+        "code": "05",
+        "name": "Mersing"
+    },
+    {
+        "code": "06",
+        "name": "Muar"
+    },
+    {
+        "code": "07",
+        "name": "Pontian"
+    },
+    {
+        "code": "08",
+        "name": "Segamat"
+    },
+    {
+        "code": "09",
+        "name": "Kulaijaya"
+    },
+    {
+        "code": "10",
+        "name": "Ledang"
+    }
+]
