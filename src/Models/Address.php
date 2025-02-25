@@ -20,6 +20,7 @@ class Address extends Model
     protected $fillable = [
         'addressable_type',
         'addressable_id',
+        'post_office_id',
         'country_id',
         'state_id',
         'types',
