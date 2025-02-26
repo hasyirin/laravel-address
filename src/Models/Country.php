@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Hasyirin\Address\Models;
 
-use Hasyirin\Address\Concerns\InteractsWithCodeScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
@@ -23,7 +22,6 @@ use Illuminate\Support\Collection;
  */
 class Country extends Model
 {
-    use InteractsWithCodeScope;
     use SoftDeletes;
 
     protected $fillable = [
