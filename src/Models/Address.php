@@ -21,9 +21,9 @@ use UnitEnum;
  * @property int $country_id
  * @property int $state_id
  * @property array $types
- * @property string $line_one
- * @property string $line_two
- * @property string $line_three
+ * @property string $line_1
+ * @property string $line_2
+ * @property string $line_3
  * @property string $postcode
  * @property float $latitude
  * @property float $longitude
@@ -44,9 +44,9 @@ class Address extends Model
         'country_id',
         'state_id',
         'types',
-        'line_one',
-        'line_two',
-        'line_three',
+        'line_1',
+        'line_2',
+        'line_3',
         'postcode',
         'latitude',
         'longitude',
@@ -101,9 +101,9 @@ class Address extends Model
     public function formatted(bool $country = true, bool $capitalize = false): string
     {
         $address = collect([
-            $this->line_one,
-            $this->line_two,
-            $this->line_three,
+            $this->line_1,
+            $this->line_2,
+            $this->line_3,
             $this->postcode,
             $this->state->name,
             $country ? $this->country->name : null,
