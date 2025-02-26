@@ -8,8 +8,13 @@ use Illuminate\Database\Eloquent\Builder;
 
 trait InteractsWithCodeScope
 {
-    public function scopeOfCode(Builder $query, string $code): ?self
+    public function scopeOfCode(Builder $query, string $code): Builder
     {
-        return $query->firstWhere('code', $code);
+        return $query->where('code', $code);
+    }
+
+    public static function ofCode(string $code): ?static
+    {
+        return static::query()->ofCode($code)->first();
     }
 }
