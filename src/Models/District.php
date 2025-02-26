@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Hasyirin\Address\Models;
 
+use Hasyirin\Address\Concerns\InteractsWithCodeScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -20,6 +21,7 @@ use Illuminate\Support\Collection;
  */
 class District extends Model
 {
+    use InteractsWithCodeScope;
     use SoftDeletes;
 
     protected $fillable = [
