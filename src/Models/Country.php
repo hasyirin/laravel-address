@@ -47,9 +47,9 @@ class Country extends Model
         return $this->hasManyThrough(config('address.models.district'), config('address.models.state'));
     }
 
-    public function postOffices(): HasMany
+    public function postOffices(): HasManyThrough
     {
-        return $this->hasMany(config('address.models.post-office'));
+        return $this->hasManyThrough(config('address.models.post-office'), config('address.models.state'));
     }
 
     public function addresses(): HasMany

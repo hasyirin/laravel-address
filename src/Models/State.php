@@ -46,6 +46,11 @@ class State extends Model
         return $this->hasMany(config('address.models.district'));
     }
 
+    public function postOffices(): HasMany
+    {
+        return $this->hasMany(config('address.models.post-office'));
+    }
+
     public function addresses(): HasMany
     {
         return $this->hasMany(config('address.models.address'));
