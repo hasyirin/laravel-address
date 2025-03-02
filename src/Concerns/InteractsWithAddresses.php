@@ -13,7 +13,7 @@ trait InteractsWithAddresses
     {
         return $this->morphOne(config('address.models.address'), 'addressable')
             ->withDefault(['types' => [$type]])
-            ->whereIn('types', [$type]);
+            ->whereJsonContains('types', $type);
     }
 
     public function addresses(): MorphMany
