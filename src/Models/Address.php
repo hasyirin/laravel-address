@@ -20,7 +20,7 @@ use UnitEnum;
  * @property int $post_office_id
  * @property int $country_id
  * @property int $state_id
- * @property array $types
+ * @property string $type
  * @property string $line_1
  * @property string $line_2
  * @property string $line_3
@@ -43,7 +43,7 @@ class Address extends Model
         'post_office_id',
         'country_id',
         'state_id',
-        'types',
+        'type',
         'line_1',
         'line_2',
         'line_3',
@@ -54,14 +54,12 @@ class Address extends Model
     ];
 
     protected $attributes = [
-        'types' => '[]',
         'properties' => '[]',
     ];
 
     protected function casts(): array
     {
         return [
-            'types' => 'array',
             'properties' => 'array',
         ];
     }
@@ -93,9 +91,9 @@ class Address extends Model
         return $this->belongsTo(config('address.models.post-office'));
     }
 
-    public function scopeOfType(Builder $query, Arrayable|BackedEnum|UnitEnum|array|string $types): void
+    public function scopeOfType(Builder $query, Arrayable|BackedEnum|UnitEnum|array|string $type): void
     {
-        $query->whereIn('types', collect($types));
+        $query->whereIn('type', collect($type));
     }
 
     public function formatted(bool $country = true, bool $capitalize = false): string

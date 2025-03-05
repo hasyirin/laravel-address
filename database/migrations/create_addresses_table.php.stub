@@ -47,7 +47,7 @@ return new class extends Migration
                 ->constrained(new $this->postOfficeModel()->getTable())
                 ->nullOnDelete();
 
-            $table->json('types');
+            $table->string('type');
 
             $table->string('line_1');
             $table->string('line_2')->nullable();

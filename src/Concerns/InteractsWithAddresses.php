@@ -12,8 +12,8 @@ trait InteractsWithAddresses
     public function getAddress(string $type): MorphOne
     {
         return $this->morphOne(config('address.models.address'), 'addressable')
-            ->withDefault(['types' => [$type]])
-            ->whereJsonContains('types', $type);
+            ->withDefault(['type' => $type])
+            ->where('type', $type);
     }
 
     public function addresses(): MorphMany
