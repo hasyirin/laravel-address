@@ -115,4 +115,20 @@ class Address extends Model
 
         return $address;
     }
+
+    public function copy(): self
+    {
+        return self::make($this->only([
+            'post_office_id',
+            'country_id',
+            'state_id',
+            'line_1',
+            'line_2',
+            'line_3',
+            'postcode',
+            'latitude',
+            'longitude',
+            'properties',
+        ]));
+    }
 }
