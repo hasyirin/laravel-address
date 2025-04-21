@@ -118,24 +118,24 @@ class Address extends Model
     public function render(bool $inline = false, bool $state = true, bool $country = true, bool $capitalize = false, int $margin = 0): string
     {
         $address = collect([
-                [$this->line_1],
-                [$this->line_2],
-                [$this->line_3],
-                [$this->postcode, $this->postOffice?->name],
-                $state ? [$this->state?->name] : [],
-                $country ? [$this->country?->name] : [],
-            ])->map(fn(array $line) => collect($line)
-                ->filter()
-                ->map(fn($line) => str($line)->rtrim(',')->trim()->when($capitalize, fn ($line) => strtoupper($line)))
-                ->filter()
-                ->join(', ')
-            )->filter()
+            [$this->line_1],
+            [$this->line_2],
+            [$this->line_3],
+            [$this->postcode, $this->postOffice?->name],
+            $state ? [$this->state?->name] : [],
+            $country ? [$this->country?->name] : [],
+        ])->map(fn (array $line) => collect($line)
+            ->filter()
+            ->map(fn ($line) => str($line)->rtrim(',')->trim()->when($capitalize, fn ($line) => strtoupper($line)))
+            ->filter()
+            ->join(', ')
+        )->filter()
             ->map(fn (string $line) => ($inline) ? "$line," : "<p class=\"mb-{$margin}\">$line,</p>")
             ->join("\n");
 
         return ($inline)
             ? str($address)->rtrim(',')
-            : rtrim($address, ',</p>') . '</p>';
+            : rtrim($address, ',</p>').'</p>';
     }
 
     public function copy(): self
