@@ -15,7 +15,7 @@ use Illuminate\Support\Collection;
  * @property string $code
  * @property string $name
  * @property string $alpha_2
- * @property boolean $local
+ * @property bool $local
  * @property Collection $states
  * @property Collection $districts
  * @property Collection $postOffices
