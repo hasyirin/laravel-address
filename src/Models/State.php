@@ -15,7 +15,7 @@ use Illuminate\Support\Collection;
  * @property int $country_id
  * @property string $code
  * @property string $name
- * @property boolean $local
+ * @property bool $local
  * @property Country $country
  * @property Collection $districts
  * @property Collection $addresses
