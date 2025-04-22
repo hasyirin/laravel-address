@@ -69,7 +69,7 @@ class State extends Model
         return $this->hasMany(config('address.models.address'));
     }
 
-    public static function local(): ?static
+    public static function local(): static
     {
         return static::query()->firstWhere('local', true);
     }

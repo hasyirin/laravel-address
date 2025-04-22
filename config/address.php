@@ -1,6 +1,11 @@
 <?php
 
 return [
+    'locality' => [
+        'country' => null,
+        'state' => null,
+    ],
+
     'models' => [
         'address' => \Hasyirin\Address\Models\Address::class,
         'country' => \Hasyirin\Address\Models\Country::class,
