@@ -15,6 +15,7 @@ use Illuminate\Support\Collection;
  * @property string $code
  * @property string $name
  * @property string $alpha_2
+ * @property boolean $local
  * @property Collection $states
  * @property Collection $districts
  * @property Collection $postOffices
@@ -28,7 +29,19 @@ class Country extends Model
         'code',
         'name',
         'alpha_2',
+        'local',
     ];
+
+    protected $attributes = [
+        'local' => false,
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'local' => 'boolean',
+        ];
+    }
 
     public function __construct(array $attributes = [])
     {
@@ -55,5 +68,10 @@ class Country extends Model
     public function addresses(): HasMany
     {
         return $this->hasMany(config('address.models.address'));
+    }
+
+    public static function local(): static
+    {
+        return static::query()->firstWhere('local', true);
     }
 }
