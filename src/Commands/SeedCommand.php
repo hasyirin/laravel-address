@@ -69,7 +69,7 @@ class SeedCommand extends Command
         $progress->start();
 
         $states->each(function (array $state) use ($progress, $country) {
-            config('address.models.state')::updateOrCreate(['country_id' => $country->id, 'code' => $state['code']], [$state, 'local' => $country->local && config('address.locality.state') === $state['code']]);
+            config('address.models.state')::updateOrCreate(['country_id' => $country->id, 'code' => $state['code']], [...$state, 'local' => $country->local && config('address.locality.state') === $state['code']]);
             $progress->advance();
         });
 
