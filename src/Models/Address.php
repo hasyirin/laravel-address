@@ -69,6 +69,17 @@ class Address extends Model
         $this->table = config('address.tables.addresses', parent::getTable());
     }
 
+    protected static function boot(): void
+    {
+        parent::booted();
+
+        static::saving(function (self $address) {
+            $address->line_1 = str($address->line_1)->squish()->rtrim(',');
+            $address->line_2 = str($address->line_2)->squish()->rtrim(',');
+            $address->line_3 = str($address->line_3)->squish()->rtrim(',');
+        });
+    }
+
     public function addressable(): MorphTo
     {
         return $this->morphTo();
