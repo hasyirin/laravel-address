@@ -71,7 +71,7 @@ class Address extends Model
 
     protected static function boot(): void
     {
-        parent::booted();
+        parent::boot();
 
         static::saving(function (self $address) {
             $address->line_1 = str($address->line_1)->squish()->rtrim(',');
