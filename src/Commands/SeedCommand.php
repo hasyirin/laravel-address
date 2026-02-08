@@ -128,7 +128,7 @@ class SeedCommand extends Command
             $state = config('address.models.state')::find($state);
 
             return $districts->each(function (array $district) use ($progress, $state) {
-                config('address.models.district')::updateOrCreate(['state_id' => $state->id, 'code' => $district['code']], $district);
+                config('address.models.district')::updateOrCreate(['state_id' => $state->id, 'code' => $district['code']], [...$district, 'local' => $state->local && config('address.locality.district') === $district['code']]);
                 $progress->advance();
             });
         });

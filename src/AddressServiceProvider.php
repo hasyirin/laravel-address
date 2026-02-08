@@ -24,4 +24,11 @@ class AddressServiceProvider extends PackageServiceProvider
                 SeedCommand::class,
             ]);
     }
+
+    public function packageBooted(): void
+    {
+        $this->publishes([
+            $this->package->basePath('/../data') => base_path('data'),
+        ], "{$this->package->shortName()}-data");
+    }
 }
