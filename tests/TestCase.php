@@ -3,7 +3,8 @@
 namespace Hasyirin\Address\Tests;
 
 use Hasyirin\Address\AddressServiceProvider;
-use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 class TestCase extends Orchestra
@@ -11,10 +12,6 @@ class TestCase extends Orchestra
     protected function setUp(): void
     {
         parent::setUp();
-
-        Factory::guessFactoryNamesUsing(
-            fn (string $modelName) => 'Hasyirin\\Address\\Database\\Factories\\'.class_basename($modelName).'Factory'
-        );
     }
 
     protected function getPackageProviders($app)
@@ -28,10 +25,28 @@ class TestCase extends Orchestra
     {
         config()->set('database.default', 'testing');
 
-        /*
-         foreach (\Illuminate\Support\Facades\File::allFiles(__DIR__ . '/database/migrations') as $migration) {
-            (include $migration->getRealPath())->up();
-         }
-         */
+        // Load the package config before migrations run (migrations reference config values)
+        config()->set('address', require __DIR__.'/../config/address.php');
+
+        // Create a users table for polymorphic relationship testing
+        Schema::create('users', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->timestamps();
+        });
+
+        // Run the migration stubs in dependency order
+        $migrations = [
+            'create_countries_table',
+            'create_states_table',
+            'create_post_offices_table',
+            'create_districts_table',
+            'create_subdistricts_table',
+            'create_addresses_table',
+        ];
+
+        foreach ($migrations as $migration) {
+            (include __DIR__."/../database/migrations/{$migration}.php.stub")->up();
+        }
     }
 }

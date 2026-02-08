@@ -51,7 +51,7 @@ class State extends Model
 
     public function country(): BelongsTo
     {
-        return $this->belongsTo(config('address.models.state'));
+        return $this->belongsTo(config('address.models.country'));
     }
 
     public function districts(): HasMany
