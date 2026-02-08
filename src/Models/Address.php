@@ -3,8 +3,10 @@
 namespace Hasyirin\Address\Models;
 
 use BackedEnum;
+use Hasyirin\Address\Database\Factories\AddressFactory;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -33,7 +35,13 @@ use UnitEnum;
  */
 class Address extends Model
 {
-    use SoftDeletes;
+    /** @use HasFactory<AddressFactory> */
+    use HasFactory, SoftDeletes;
+
+    protected static function newFactory(): AddressFactory
+    {
+        return AddressFactory::new();
+    }
 
     protected $fillable = [
         'addressable_type',
@@ -151,17 +159,6 @@ class Address extends Model
 
     public function copy(): self
     {
-        return self::make($this->only([
-            'post_office_id',
-            'country_id',
-            'state_id',
-            'line_1',
-            'line_2',
-            'line_3',
-            'postcode',
-            'latitude',
-            'longitude',
-            'properties',
-        ]));
+        return $this->replicate(['addressable_type', 'addressable_id', 'type']);
     }
 }

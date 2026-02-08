@@ -12,7 +12,7 @@ Comes with built-in geographical data for Malaysia and a seeder command to popul
 ## Requirements
 
 - PHP 8.4+
-- Laravel 10 or 11
+- Laravel 11 or 12
 
 ## Installation
 
@@ -77,6 +77,22 @@ $user->address()->create([
     'longitude' => 101.6869,
     'properties' => ['notes' => 'Front gate access'],
 ]);
+```
+
+### Using the Factory
+
+The `Address` model includes a factory for testing:
+
+```php
+use Hasyirin\Address\Models\Address;
+
+Address::factory()
+    ->for($user, 'addressable')
+    ->create([
+        'type' => 'primary',
+        'line_1' => 'No. 1, Jalan Test',
+        'postcode' => '40000',
+    ]);
 ```
 
 ### Retrieving Addresses
@@ -151,7 +167,7 @@ return [
     // Mark a country/state as "local" during seeding
     'locality' => [
         'country' => null, // e.g. 'MYS'
-        'state' => null,   // e.g. 'SGR'
+        'state' => null,   // e.g. '01'
     ],
 
     // Override model classes

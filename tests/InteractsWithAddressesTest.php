@@ -22,46 +22,42 @@ it('returns a morph-many for addresses()', function () {
 });
 
 it('returns primary address via address()', function () {
-    Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'type' => 'primary',
-        'line_1' => 'Primary Address',
-    ]);
+    Address::factory()
+        ->for($this->user, 'addressable')
+        ->create([
+            'type' => 'primary',
+            'line_1' => 'Primary Address',
+        ]);
 
-    Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'type' => 'billing',
-        'line_1' => 'Billing Address',
-    ]);
+    Address::factory()
+        ->for($this->user, 'addressable')
+        ->create([
+            'type' => 'billing',
+            'line_1' => 'Billing Address',
+        ]);
 
     expect($this->user->address->line_1)->toBe('Primary Address');
 });
 
 it('returns all addresses via addresses()', function () {
-    Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'type' => 'primary',
-    ]);
+    Address::factory()
+        ->for($this->user, 'addressable')
+        ->create(['type' => 'primary']);
 
-    Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'type' => 'billing',
-    ]);
+    Address::factory()
+        ->for($this->user, 'addressable')
+        ->create(['type' => 'billing']);
 
     expect($this->user->addresses)->toHaveCount(2);
 });
 
 it('returns address by type via getAddress()', function () {
-    Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'type' => 'billing',
-        'line_1' => 'Billing Address',
-    ]);
+    Address::factory()
+        ->for($this->user, 'addressable')
+        ->create([
+            'type' => 'billing',
+            'line_1' => 'Billing Address',
+        ]);
 
     $billing = $this->user->getAddress('billing')->first();
 

@@ -18,17 +18,17 @@ beforeEach(function () {
 });
 
 it('can create an address', function () {
-    $address = Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'country_id' => $this->country->id,
-        'state_id' => $this->state->id,
-        'post_office_id' => $this->postOffice->id,
-        'type' => 'primary',
-        'line_1' => 'No. 1, Jalan Test',
-        'line_2' => 'Taman Test',
-        'postcode' => '40000',
-    ])->fresh();
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create([
+            'country_id' => $this->country->id,
+            'state_id' => $this->state->id,
+            'post_office_id' => $this->postOffice->id,
+            'type' => 'primary',
+            'line_1' => 'No. 1, Jalan Test',
+            'line_2' => 'Taman Test',
+            'postcode' => '40000',
+        ])->fresh();
 
     expect($address)->toBeInstanceOf(Address::class)
         ->and($address->type)->toBe('primary')
@@ -37,83 +37,68 @@ it('can create an address', function () {
 });
 
 it('casts properties to array', function () {
-    $address = Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'type' => 'primary',
-        'properties' => ['floor' => '3', 'unit' => 'A'],
-    ]);
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create([
+            'properties' => ['floor' => '3', 'unit' => 'A'],
+        ]);
 
     $fresh = $address->fresh();
     expect($fresh->properties)->toBeArray()->toBe(['floor' => '3', 'unit' => 'A']);
 });
 
 it('defaults properties to empty array', function () {
-    $address = Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'type' => 'primary',
-    ]);
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create();
 
     expect($address->properties)->toBe([]);
 });
 
 it('belongs to a country', function () {
-    $address = Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'country_id' => $this->country->id,
-        'type' => 'primary',
-    ]);
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create(['country_id' => $this->country->id]);
 
     expect($address->country)->toBeInstanceOf(Country::class)
         ->id->toBe($this->country->id);
 });
 
 it('belongs to a state', function () {
-    $address = Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'state_id' => $this->state->id,
-        'type' => 'primary',
-    ]);
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create(['state_id' => $this->state->id]);
 
     expect($address->state)->toBeInstanceOf(State::class)
         ->id->toBe($this->state->id);
 });
 
 it('belongs to a post office', function () {
-    $address = Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'post_office_id' => $this->postOffice->id,
-        'type' => 'primary',
-    ]);
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create(['post_office_id' => $this->postOffice->id]);
 
     expect($address->postOffice)->toBeInstanceOf(PostOffice::class)
         ->id->toBe($this->postOffice->id);
 });
 
 it('has a morph-to addressable relationship', function () {
-    $address = Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'type' => 'primary',
-    ]);
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create();
 
     expect($address->addressable)->toBeInstanceOf(User::class)
         ->id->toBe($this->user->id);
 });
 
 it('squishes whitespace on line fields when saving', function () {
-    $address = Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'type' => 'primary',
-        'line_1' => '  No. 1,   Jalan  Test  ',
-        'line_2' => '  Taman   Test  ',
-        'line_3' => '  Area   Test  ',
-    ])->fresh();
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create([
+            'line_1' => '  No. 1,   Jalan  Test  ',
+            'line_2' => '  Taman   Test  ',
+            'line_3' => '  Area   Test  ',
+        ])->fresh();
 
     expect($address->line_1)->toBe('No. 1, Jalan Test')
         ->and($address->line_2)->toBe('Taman Test')
@@ -121,14 +106,13 @@ it('squishes whitespace on line fields when saving', function () {
 });
 
 it('trims trailing commas on line fields when saving', function () {
-    $address = Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'type' => 'primary',
-        'line_1' => 'No. 1, Jalan Test,',
-        'line_2' => 'Taman Test,',
-        'line_3' => 'Area Test,',
-    ])->fresh();
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create([
+            'line_1' => 'No. 1, Jalan Test,',
+            'line_2' => 'Taman Test,',
+            'line_3' => 'Area Test,',
+        ])->fresh();
 
     expect($address->line_1)->toBe('No. 1, Jalan Test')
         ->and($address->line_2)->toBe('Taman Test')
@@ -138,17 +122,16 @@ it('trims trailing commas on line fields when saving', function () {
 // -- formatted() --
 
 it('formats address with all parts', function () {
-    $address = Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'country_id' => $this->country->id,
-        'state_id' => $this->state->id,
-        'post_office_id' => $this->postOffice->id,
-        'type' => 'primary',
-        'line_1' => 'No. 1, Jalan Test',
-        'line_2' => 'Taman Test',
-        'postcode' => '40000',
-    ]);
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create([
+            'country_id' => $this->country->id,
+            'state_id' => $this->state->id,
+            'post_office_id' => $this->postOffice->id,
+            'line_1' => 'No. 1, Jalan Test',
+            'line_2' => 'Taman Test',
+            'postcode' => '40000',
+        ]);
 
     $formatted = $address->formatted();
 
@@ -161,15 +144,14 @@ it('formats address with all parts', function () {
 });
 
 it('formats address without state', function () {
-    $address = Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'country_id' => $this->country->id,
-        'state_id' => $this->state->id,
-        'type' => 'primary',
-        'line_1' => 'No. 1',
-        'postcode' => '40000',
-    ]);
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create([
+            'country_id' => $this->country->id,
+            'state_id' => $this->state->id,
+            'line_1' => 'No. 1',
+            'postcode' => '40000',
+        ]);
 
     $formatted = $address->formatted(state: false);
 
@@ -178,15 +160,14 @@ it('formats address without state', function () {
 });
 
 it('formats address without country', function () {
-    $address = Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'country_id' => $this->country->id,
-        'state_id' => $this->state->id,
-        'type' => 'primary',
-        'line_1' => 'No. 1',
-        'postcode' => '40000',
-    ]);
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create([
+            'country_id' => $this->country->id,
+            'state_id' => $this->state->id,
+            'line_1' => 'No. 1',
+            'postcode' => '40000',
+        ]);
 
     $formatted = $address->formatted(country: false);
 
@@ -195,12 +176,13 @@ it('formats address without country', function () {
 });
 
 it('formats address capitalized', function () {
-    $address = Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'type' => 'primary',
-        'line_1' => 'No. 1, Jalan Test',
-    ])->fresh();
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create([
+            'line_1' => 'No. 1, Jalan Test',
+            'line_2' => null,
+            'postcode' => null,
+        ])->fresh();
 
     $formatted = $address->formatted(state: false, country: false, capitalize: true);
 
@@ -210,14 +192,13 @@ it('formats address capitalized', function () {
 // -- render() --
 
 it('renders address inline', function () {
-    $address = Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'state_id' => $this->state->id,
-        'type' => 'primary',
-        'line_1' => 'No. 1, Jalan Test',
-        'postcode' => '40000',
-    ]);
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create([
+            'state_id' => $this->state->id,
+            'line_1' => 'No. 1, Jalan Test',
+            'postcode' => '40000',
+        ]);
 
     $rendered = $address->render(inline: true, country: false);
 
@@ -226,14 +207,13 @@ it('renders address inline', function () {
 });
 
 it('renders address as block with p tags', function () {
-    $address = Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'state_id' => $this->state->id,
-        'type' => 'primary',
-        'line_1' => 'No. 1, Jalan Test',
-        'postcode' => '40000',
-    ]);
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create([
+            'state_id' => $this->state->id,
+            'line_1' => 'No. 1, Jalan Test',
+            'postcode' => '40000',
+        ]);
 
     $rendered = $address->render(country: false);
 
@@ -242,12 +222,9 @@ it('renders address as block with p tags', function () {
 });
 
 it('renders address with custom margin', function () {
-    $address = Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'type' => 'primary',
-        'line_1' => 'No. 1',
-    ]);
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create(['line_1' => 'No. 1']);
 
     $rendered = $address->render(state: false, country: false, margin: 2);
 
@@ -255,37 +232,31 @@ it('renders address with custom margin', function () {
 });
 
 it('renders address capitalized', function () {
-    $address = Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'type' => 'primary',
-        'line_1' => 'No. 1, Jalan Test',
-    ]);
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create(['line_1' => 'No. 1, Jalan Test']);
 
     $rendered = $address->render(inline: true, state: false, country: false, capitalize: true);
 
     expect($rendered)->toContain('NO. 1, JALAN TEST');
 });
 
-// -- copy() --
+it('copy an address without addressable or type', function () {
+    $original = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create([
+            'country_id' => $this->country->id,
+            'state_id' => $this->state->id,
+            'post_office_id' => $this->postOffice->id,
+            'type' => 'primary',
+            'line_1' => 'No. 1',
+            'line_2' => 'Taman Test',
+            'postcode' => '40000',
+            'latitude' => 3.1,
+            'longitude' => 101.6,
+            'properties' => ['floor' => '3'],
+        ])->fresh();
 
-it('copies an address without addressable or type', function () {
-    $original = Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'country_id' => $this->country->id,
-        'state_id' => $this->state->id,
-        'post_office_id' => $this->postOffice->id,
-        'type' => 'primary',
-        'line_1' => 'No. 1',
-        'line_2' => 'Taman Test',
-        'postcode' => '40000',
-        'latitude' => 3.1,
-        'longitude' => 101.6,
-        'properties' => ['floor' => '3'],
-    ]);
-
-    $original = $original->fresh();
     $copy = $original->copy();
 
     expect($copy->exists)->toBeFalse()
@@ -303,37 +274,27 @@ it('copies an address without addressable or type', function () {
 // -- scopeOfType --
 
 it('scopes addresses by type string', function () {
-    Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'type' => 'primary',
-    ]);
-    Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'type' => 'billing',
-    ]);
+    Address::factory()
+        ->for($this->user, 'addressable')
+        ->create(['type' => 'primary']);
+    Address::factory()
+        ->for($this->user, 'addressable')
+        ->create(['type' => 'billing']);
 
     expect(Address::ofType('primary')->count())->toBe(1)
         ->and(Address::ofType('billing')->count())->toBe(1);
 });
 
 it('scopes addresses by type array', function () {
-    Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'type' => 'primary',
-    ]);
-    Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'type' => 'billing',
-    ]);
-    Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'type' => 'shipping',
-    ]);
+    Address::factory()
+        ->for($this->user, 'addressable')
+        ->create(['type' => 'primary']);
+    Address::factory()
+        ->for($this->user, 'addressable')
+        ->create(['type' => 'billing']);
+    Address::factory()
+        ->for($this->user, 'addressable')
+        ->create(['type' => 'shipping']);
 
     expect(Address::ofType(['primary', 'billing'])->count())->toBe(2);
 });
@@ -341,11 +302,9 @@ it('scopes addresses by type array', function () {
 // -- soft deletes --
 
 it('supports soft deletes', function () {
-    $address = Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
-        'type' => 'primary',
-    ]);
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create();
     $address->delete();
 
     expect(Address::count())->toBe(0)
