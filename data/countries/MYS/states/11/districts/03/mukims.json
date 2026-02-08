@@ -1,0 +1,54 @@
+[
+    {
+        "code": "01",
+        "name": "Cukai Bandar"
+    },
+    {
+        "code": "02",
+        "name": "Cukai"
+    },
+    {
+        "code": "03",
+        "name": "Banggul"
+    },
+    {
+        "code": "04",
+        "name": "Binjai"
+    },
+    {
+        "code": "05",
+        "name": "Pasir Semut"
+    },
+    {
+        "code": "06",
+        "name": "Teluk Kalung"
+    },
+    {
+        "code": "07",
+        "name": "Kijal"
+    },
+    {
+        "code": "08",
+        "name": "Kemasik"
+    },
+    {
+        "code": "09",
+        "name": "Kertih"
+    },
+    {
+        "code": "10",
+        "name": "Hulu Cukai"
+    },
+    {
+        "code": "11",
+        "name": "Tebak"
+    },
+    {
+        "code": "12",
+        "name": "Bandi"
+    },
+    {
+        "code": "13",
+        "name": "Hulu Jabur"
+    }
+]
