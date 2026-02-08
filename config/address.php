@@ -4,6 +4,7 @@ return [
     'locality' => [
         'country' => null,
         'state' => null,
+        'district' => null,
     ],
 
     'models' => [

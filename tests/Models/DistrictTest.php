@@ -37,6 +37,24 @@ it('has many subdistricts', function () {
     expect($district->subdistricts)->toHaveCount(2);
 });
 
+it('defaults local to false', function () {
+    $district = District::create([
+        'state_id' => $this->state->id,
+        'code' => '01',
+        'name' => 'Petaling',
+    ]);
+
+    expect($district->local)->toBeFalse();
+});
+
+it('returns the local district via static method', function () {
+    District::create(['state_id' => $this->state->id, 'code' => '01', 'name' => 'Petaling', 'local' => false]);
+    $local = District::create(['state_id' => $this->state->id, 'code' => '02', 'name' => 'Klang', 'local' => true]);
+
+    expect(District::local())->toBeInstanceOf(District::class)
+        ->id->toBe($local->id);
+});
+
 it('supports soft deletes', function () {
     $district = District::create(['state_id' => $this->state->id, 'code' => '01', 'name' => 'Petaling']);
     $district->delete();

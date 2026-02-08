@@ -15,6 +15,7 @@ use Illuminate\Support\Collection;
  * @property int $state_id
  * @property string $code
  * @property string $name
+ * @property bool $local
  * @property State $state
  * @property Collection $subdistricts
  */
@@ -26,7 +27,19 @@ class District extends Model
         'state_id',
         'code',
         'name',
+        'local',
     ];
+
+    protected $attributes = [
+        'local' => false,
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'local' => 'boolean',
+        ];
+    }
 
     public function __construct(array $attributes = [])
     {
@@ -43,5 +56,10 @@ class District extends Model
     public function subdistricts(): HasMany
     {
         return $this->hasMany(config('address.models.subdistrict'));
+    }
+
+    public static function local(): static
+    {
+        return static::query()->firstWhere('local', true);
     }
 }
