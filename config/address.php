@@ -1,5 +1,12 @@
 <?php
 
+use Hasyirin\Address\Models\Address;
+use Hasyirin\Address\Models\Country;
+use Hasyirin\Address\Models\District;
+use Hasyirin\Address\Models\PostOffice;
+use Hasyirin\Address\Models\State;
+use Hasyirin\Address\Models\Subdistrict;
+
 return [
     'locality' => [
         'country' => null,
@@ -8,12 +15,12 @@ return [
     ],
 
     'models' => [
-        'address' => \Hasyirin\Address\Models\Address::class,
-        'country' => \Hasyirin\Address\Models\Country::class,
-        'state' => \Hasyirin\Address\Models\State::class,
-        'district' => \Hasyirin\Address\Models\District::class,
-        'subdistrict' => \Hasyirin\Address\Models\Subdistrict::class,
-        'post-office' => \Hasyirin\Address\Models\PostOffice::class,
+        'address' => Address::class,
+        'country' => Country::class,
+        'state' => State::class,
+        'district' => District::class,
+        'subdistrict' => Subdistrict::class,
+        'post-office' => PostOffice::class,
     ],
 
     'tables' => [
