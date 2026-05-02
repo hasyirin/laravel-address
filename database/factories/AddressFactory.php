@@ -10,7 +10,10 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class AddressFactory extends Factory
 {
-    protected $model = Address::class;
+    public function modelName(): string
+    {
+        return config('address.models.address', Address::class);
+    }
 
     public function definition(): array
     {
