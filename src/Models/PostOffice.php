@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Hasyirin\Address\Models;
 
+use Hasyirin\Address\Database\Factories\PostOfficeFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -17,7 +19,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class PostOffice extends Model
 {
-    use SoftDeletes;
+    /** @use HasFactory<PostOfficeFactory> */
+    use HasFactory, SoftDeletes;
+
+    protected static function newFactory(): PostOfficeFactory
+    {
+        return PostOfficeFactory::new();
+    }
 
     protected $fillable = [
         'state_id',

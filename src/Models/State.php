@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Hasyirin\Address\Models;
 
+use Hasyirin\Address\Database\Factories\StateFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -22,7 +24,13 @@ use Illuminate\Support\Collection;
  */
 class State extends Model
 {
-    use SoftDeletes;
+    /** @use HasFactory<StateFactory> */
+    use HasFactory, SoftDeletes;
+
+    protected static function newFactory(): StateFactory
+    {
+        return StateFactory::new();
+    }
 
     protected $fillable = [
         'country_id',
