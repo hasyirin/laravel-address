@@ -2,6 +2,12 @@
 
 All notable changes to `laravel-address` will be documented in this file.
 
+## v2.5.0
+
+- Added `CountryFactory`, `StateFactory`, `DistrictFactory`, `SubdistrictFactory`, and `PostOfficeFactory`
+- Added `local()` factory state on `CountryFactory`, `StateFactory`, and `DistrictFactory`
+- Wired `HasFactory` trait and `newFactory()` resolver into `Country`, `State`, `District`, `Subdistrict`, and `PostOffice` models so the configured model class is used when overridden in `address.models`
+
 ## v2.4.0
 
 - Added Laravel 13 support — widened `illuminate/contracts` to `^11.0||^12.0||^13.0`
