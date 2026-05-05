@@ -21,7 +21,8 @@ class StateFactory extends Factory
         return [
             'country_id' => Country::factory(),
             'code' => fake()->numerify('##'),
-            'name' => fake()->city(),
+            // @phpstan-ignore-next-line method.notFound
+            'name' => fake()->state(),
             'local' => false,
         ];
     }
