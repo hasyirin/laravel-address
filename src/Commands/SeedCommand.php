@@ -36,7 +36,7 @@ class SeedCommand extends Command
 
         collect($countries)
             ->each(function (array $country, int $index) use ($total) {
-                $country = config('address.models.country')::updateOrCreate(['code' => $country['code']], [...$country, 'local' => config('address.locality.country') === $country['code']]);
+                $country = config('address.models.country')::updateOrCreate(['code' => $country['code']], $country);
 
                 $current = $index + 1;
 
@@ -69,7 +69,7 @@ class SeedCommand extends Command
         $progress->start();
 
         $states->each(function (array $state) use ($progress, $country) {
-            config('address.models.state')::updateOrCreate(['country_id' => $country->id, 'code' => $state['code']], [...$state, 'local' => $country->local && config('address.locality.state') === $state['code']]);
+            config('address.models.state')::updateOrCreate(['country_id' => $country->id, 'code' => $state['code']], $state);
             $progress->advance();
         });
 
@@ -128,7 +128,7 @@ class SeedCommand extends Command
             $state = config('address.models.state')::find($state);
 
             return $districts->each(function (array $district) use ($progress, $state) {
-                config('address.models.district')::updateOrCreate(['state_id' => $state->id, 'code' => $district['code']], [...$district, 'local' => $state->local && config('address.locality.district') === $district['code']]);
+                config('address.models.district')::updateOrCreate(['state_id' => $state->id, 'code' => $district['code']], $district);
                 $progress->advance();
             });
         });

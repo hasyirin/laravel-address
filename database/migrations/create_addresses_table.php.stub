@@ -9,16 +9,16 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     protected string $table;
-    protected string $countryModel;
-    protected string $stateModel;
-    protected string $postOfficeModel;
+    protected string $countriesTable;
+    protected string $statesTable;
+    protected string $postOfficesTable;
 
     public function __construct()
     {
         $this->table = config('address.tables.addresses');
-        $this->countryModel = config('address.models.country');
-        $this->stateModel = config('address.models.state');
-        $this->postOfficeModel = config('address.models.post-office');
+        $this->countriesTable = config('address.tables.countries');
+        $this->statesTable = config('address.tables.states');
+        $this->postOfficesTable = config('address.tables.post_offices');
     }
 
     public function up(): void
@@ -29,22 +29,22 @@ return new class extends Migration
 
             $table->morphs('addressable');
 
-            $table->foreignIdFor($this->countryModel)
+            $table->foreignId('country_id')
                 ->index()
                 ->nullable()
-                ->constrained(new $this->countryModel()->getTable())
+                ->references('id')->on($this->countriesTable)
                 ->nullOnDelete();
 
-            $table->foreignIdFor($this->stateModel)
+            $table->foreignId('state_id')
                 ->index()
                 ->nullable()
-                ->constrained(new $this->stateModel()->getTable())
+                ->references('id')->on($this->statesTable)
                 ->nullOnDelete();
 
-            $table->foreignIdFor($this->postOfficeModel)
+            $table->foreignId('post_office_id')
                 ->index()
                 ->nullable()
-                ->constrained(new $this->postOfficeModel()->getTable())
+                ->references('id')->on($this->postOfficesTable)
                 ->nullOnDelete();
 
             $table->string('type');

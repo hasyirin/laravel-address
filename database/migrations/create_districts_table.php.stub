@@ -9,12 +9,12 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     protected string $table;
-    protected string $stateModel;
+    protected string $statesTable;
 
     public function __construct()
     {
         $this->table = config('address.tables.districts');
-        $this->stateModel = config('address.models.state');
+        $this->statesTable = config('address.tables.states');
     }
 
     public function up(): void
@@ -23,15 +23,13 @@ return new class extends Migration
 
             $table->id();
 
-            $table->foreignIdFor($this->stateModel)
+            $table->foreignId('state_id')
                 ->index()
-                ->constrained(new $this->stateModel()->getTable())
+                ->references('id')->on($this->statesTable)
                 ->cascadeOnDelete();
 
             $table->string('code');
             $table->string('name');
-
-            $table->boolean('local')->default(false);
 
             $table->timestamps();
             $table->softDeletes();

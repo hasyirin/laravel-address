@@ -21,12 +21,6 @@ class CountryFactory extends Factory
             'code' => fake()->countryISOAlpha3(),
             'name' => fake()->country(),
             'alpha_2' => fake()->countryCode(),
-            'local' => false,
         ];
-    }
-
-    public function local(): static
-    {
-        return $this->state(fn () => ['local' => true]);
     }
 }

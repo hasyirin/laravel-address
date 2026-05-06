@@ -22,12 +22,6 @@ class DistrictFactory extends Factory
             'state_id' => State::factory(),
             'code' => fake()->numerify('##'),
             'name' => fake()->city(),
-            'local' => false,
         ];
-    }
-
-    public function local(): static
-    {
-        return $this->state(fn () => ['local' => true]);
     }
 }

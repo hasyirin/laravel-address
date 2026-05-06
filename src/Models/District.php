@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Hasyirin\Address\Models;
 
+use Hasyirin\Address\Concerns\HasLocality;
+use Hasyirin\Address\Contracts\Localizable;
 use Hasyirin\Address\Database\Factories\DistrictFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,14 +20,13 @@ use Illuminate\Support\Collection;
  * @property int $state_id
  * @property string $code
  * @property string $name
- * @property bool $local
  * @property State $state
- * @property Collection $subdistricts
+ * @property Collection<Subdistrict> $subdistricts
  */
-class District extends Model
+class District extends Model implements Localizable
 {
     /** @use HasFactory<DistrictFactory> */
-    use HasFactory, SoftDeletes;
+    use HasFactory, HasLocality, SoftDeletes;
 
     protected static function newFactory(): DistrictFactory
     {
@@ -35,19 +37,7 @@ class District extends Model
         'state_id',
         'code',
         'name',
-        'local',
     ];
-
-    protected $attributes = [
-        'local' => false,
-    ];
-
-    protected function casts(): array
-    {
-        return [
-            'local' => 'boolean',
-        ];
-    }
 
     public function __construct(array $attributes = [])
     {
@@ -66,8 +56,12 @@ class District extends Model
         return $this->hasMany(config('address.models.subdistrict'));
     }
 
-    public static function local(): static
+    public function scopeLocal(Builder $query): void
     {
-        return static::query()->firstWhere('local', true);
+        $query->where('code', config('address.locality.district'))
+            ->whereHas('state', function (Builder $q) {
+                $q->where('code', config('address.locality.state'))
+                    ->whereHas('country', fn (Builder $r) => $r->where('code', config('address.locality.country')));
+            });
     }
 }

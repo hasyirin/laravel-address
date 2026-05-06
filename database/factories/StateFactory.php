@@ -23,12 +23,6 @@ class StateFactory extends Factory
             'code' => fake()->numerify('##'),
             // @phpstan-ignore-next-line method.notFound
             'name' => fake()->state(),
-            'local' => false,
         ];
-    }
-
-    public function local(): static
-    {
-        return $this->state(fn () => ['local' => true]);
     }
 }

@@ -16,31 +16,46 @@ it('can create a state', function () {
         'country_id' => $this->country->id,
         'code' => '10',
         'name' => 'Selangor',
-        'local' => true,
     ]);
 
     expect($state)->toBeInstanceOf(State::class)
         ->and($state->code)->toBe('10')
-        ->and($state->name)->toBe('Selangor')
-        ->and($state->local)->toBeTrue();
-});
-
-it('defaults local to false', function () {
-    $state = State::create([
-        'country_id' => $this->country->id,
-        'code' => '10',
-        'name' => 'Selangor',
-    ]);
-
-    expect($state->local)->toBeFalse();
+        ->and($state->name)->toBe('Selangor');
 });
 
 it('returns the local state via static method', function () {
-    State::create(['country_id' => $this->country->id, 'code' => '10', 'name' => 'Selangor', 'local' => false]);
-    $local = State::create(['country_id' => $this->country->id, 'code' => '14', 'name' => 'Kuala Lumpur', 'local' => true]);
+    config([
+        'address.locality.country' => 'MYS',
+        'address.locality.state' => '14',
+    ]);
+
+    State::create(['country_id' => $this->country->id, 'code' => '10', 'name' => 'Selangor']);
+    $local = State::create(['country_id' => $this->country->id, 'code' => '14', 'name' => 'Kuala Lumpur']);
 
     expect(State::local())->toBeInstanceOf(State::class)
         ->id->toBe($local->id);
+});
+
+it('returns null when locality state config is unset', function () {
+    config([
+        'address.locality.country' => 'MYS',
+        'address.locality.state' => null,
+    ]);
+
+    State::create(['country_id' => $this->country->id, 'code' => '14', 'name' => 'Kuala Lumpur']);
+
+    expect(State::local())->toBeNull();
+});
+
+it('returns null when locality country config is unset', function () {
+    config([
+        'address.locality.country' => null,
+        'address.locality.state' => '14',
+    ]);
+
+    State::create(['country_id' => $this->country->id, 'code' => '14', 'name' => 'Kuala Lumpur']);
+
+    expect(State::local())->toBeNull();
 });
 
 // NOTE: State::country() has a bug — it uses config('address.models.state') instead of

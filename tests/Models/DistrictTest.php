@@ -37,22 +37,42 @@ it('has many subdistricts', function () {
     expect($district->subdistricts)->toHaveCount(2);
 });
 
-it('defaults local to false', function () {
-    $district = District::create([
-        'state_id' => $this->state->id,
-        'code' => '01',
-        'name' => 'Petaling',
+it('returns the local district via static method', function () {
+    config([
+        'address.locality.country' => 'MYS',
+        'address.locality.state' => '10',
+        'address.locality.district' => '02',
     ]);
 
-    expect($district->local)->toBeFalse();
-});
-
-it('returns the local district via static method', function () {
-    District::create(['state_id' => $this->state->id, 'code' => '01', 'name' => 'Petaling', 'local' => false]);
-    $local = District::create(['state_id' => $this->state->id, 'code' => '02', 'name' => 'Klang', 'local' => true]);
+    District::create(['state_id' => $this->state->id, 'code' => '01', 'name' => 'Petaling']);
+    $local = District::create(['state_id' => $this->state->id, 'code' => '02', 'name' => 'Klang']);
 
     expect(District::local())->toBeInstanceOf(District::class)
         ->id->toBe($local->id);
+});
+
+it('returns null when locality district config is unset', function () {
+    config([
+        'address.locality.country' => 'MYS',
+        'address.locality.state' => '10',
+        'address.locality.district' => null,
+    ]);
+
+    District::create(['state_id' => $this->state->id, 'code' => '02', 'name' => 'Klang']);
+
+    expect(District::local())->toBeNull();
+});
+
+it('returns null when an ancestor locality config is unset', function () {
+    config([
+        'address.locality.country' => 'MYS',
+        'address.locality.state' => null,
+        'address.locality.district' => '02',
+    ]);
+
+    District::create(['state_id' => $this->state->id, 'code' => '02', 'name' => 'Klang']);
+
+    expect(District::local())->toBeNull();
 });
 
 it('supports soft deletes', function () {

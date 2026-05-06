@@ -12,49 +12,38 @@ it('can create a country', function () {
         'code' => 'MYS',
         'name' => 'Malaysia',
         'alpha_2' => 'MY',
-        'local' => true,
     ]);
 
     expect($country)->toBeInstanceOf(Country::class)
         ->and($country->code)->toBe('MYS')
         ->and($country->name)->toBe('Malaysia')
-        ->and($country->alpha_2)->toBe('MY')
-        ->and($country->local)->toBeTrue();
-});
-
-it('casts local to boolean', function () {
-    $country = Country::create([
-        'code' => 'MYS',
-        'name' => 'Malaysia',
-        'local' => 1,
-    ]);
-
-    expect($country->local)->toBeBool()->toBeTrue();
-
-    $country2 = Country::create([
-        'code' => 'USA',
-        'name' => 'United States',
-        'local' => 0,
-    ]);
-
-    expect($country2->local)->toBeBool()->toBeFalse();
-});
-
-it('defaults local to false', function () {
-    $country = Country::create([
-        'code' => 'GBR',
-        'name' => 'United Kingdom',
-    ]);
-
-    expect($country->local)->toBeFalse();
+        ->and($country->alpha_2)->toBe('MY');
 });
 
 it('returns the local country via static method', function () {
-    Country::create(['code' => 'USA', 'name' => 'United States', 'local' => false]);
-    $local = Country::create(['code' => 'MYS', 'name' => 'Malaysia', 'local' => true]);
+    config(['address.locality.country' => 'MYS']);
+
+    Country::create(['code' => 'USA', 'name' => 'United States']);
+    $local = Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
 
     expect(Country::local())->toBeInstanceOf(Country::class)
         ->id->toBe($local->id);
+});
+
+it('returns null when locality config is unset', function () {
+    config(['address.locality.country' => null]);
+
+    Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
+
+    expect(Country::local())->toBeNull();
+});
+
+it('returns null when no country matches the locality code', function () {
+    config(['address.locality.country' => 'MYS']);
+
+    Country::create(['code' => 'USA', 'name' => 'United States']);
+
+    expect(Country::local())->toBeNull();
 });
 
 it('has many states', function () {

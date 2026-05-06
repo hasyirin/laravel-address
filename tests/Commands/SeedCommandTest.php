@@ -18,17 +18,13 @@ it('seeds countries from data file', function () {
     expect(Country::count())->toBe(count($countriesData));
 });
 
-it('sets the local flag based on config', function () {
+it('resolves the local country from locality config after seeding', function () {
     config()->set('address.locality.country', 'MYS');
 
     $this->artisan('address:seed');
 
-    $malaysia = Country::where('code', 'MYS')->first();
+    $local = Country::local();
 
-    expect($malaysia)->not->toBeNull()
-        ->and($malaysia->local)->toBeTrue();
-
-    // Other countries should not be local
-    $nonLocal = Country::where('code', '!=', 'MYS')->where('local', true)->count();
-    expect($nonLocal)->toBe(0);
+    expect($local)->not->toBeNull()
+        ->and($local->code)->toBe('MYS');
 });
