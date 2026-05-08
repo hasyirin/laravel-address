@@ -6,6 +6,7 @@ use Hasyirin\Address\Models\District;
 use Hasyirin\Address\Models\PostOffice;
 use Hasyirin\Address\Models\State;
 use Hasyirin\Address\Tests\Fixtures\User;
+use Illuminate\Support\Facades\DB;
 
 it('can create a country', function () {
     $country = Country::create([
@@ -42,6 +43,23 @@ it('returns null when no country matches the locality code', function () {
     config(['address.locality.country' => 'MYS']);
 
     Country::create(['code' => 'USA', 'name' => 'United States']);
+
+    expect(Country::local())->toBeNull();
+});
+
+it('memoizes local() within a request and invalidates on save', function () {
+    config(['address.locality.country' => 'MYS']);
+
+    $mys = Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
+
+    expect(Country::local()?->code)->toBe('MYS');
+
+    // Bypass model events so the saved listener does not fire — cache stays warm.
+    DB::table('countries')->where('id', $mys->id)->update(['code' => 'XXX']);
+
+    expect(Country::local()?->code)->toBe('MYS');
+
+    Country::clearLocalCache();
 
     expect(Country::local())->toBeNull();
 });

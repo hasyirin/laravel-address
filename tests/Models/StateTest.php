@@ -6,6 +6,7 @@ use Hasyirin\Address\Models\District;
 use Hasyirin\Address\Models\PostOffice;
 use Hasyirin\Address\Models\State;
 use Hasyirin\Address\Tests\Fixtures\User;
+use Illuminate\Support\Facades\DB;
 
 beforeEach(function () {
     $this->country = Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
@@ -54,6 +55,26 @@ it('returns null when locality country config is unset', function () {
     ]);
 
     State::create(['country_id' => $this->country->id, 'code' => '14', 'name' => 'Kuala Lumpur']);
+
+    expect(State::local())->toBeNull();
+});
+
+it('invalidates local() when the parent Country saves', function () {
+    config([
+        'address.locality.country' => 'MYS',
+        'address.locality.state' => '14',
+    ]);
+
+    $kl = State::create(['country_id' => $this->country->id, 'code' => '14', 'name' => 'Kuala Lumpur']);
+
+    expect(State::local()?->id)->toBe($kl->id);
+
+    // Bypass model events so the State cache stays warm despite the country mutation.
+    DB::table('countries')->where('id', $this->country->id)->update(['code' => 'XXX']);
+    expect(State::local()?->id)->toBe($kl->id);
+
+    // Saving the parent Country fires saved → State's listener clears the cache.
+    $this->country->save();
 
     expect(State::local())->toBeNull();
 });

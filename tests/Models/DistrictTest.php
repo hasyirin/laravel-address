@@ -4,6 +4,7 @@ use Hasyirin\Address\Models\Country;
 use Hasyirin\Address\Models\District;
 use Hasyirin\Address\Models\State;
 use Hasyirin\Address\Models\Subdistrict;
+use Illuminate\Support\Facades\DB;
 
 beforeEach(function () {
     $this->country = Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
@@ -71,6 +72,45 @@ it('returns null when an ancestor locality config is unset', function () {
     ]);
 
     District::create(['state_id' => $this->state->id, 'code' => '02', 'name' => 'Klang']);
+
+    expect(District::local())->toBeNull();
+});
+
+it('invalidates local() when the parent State saves', function () {
+    config([
+        'address.locality.country' => 'MYS',
+        'address.locality.state' => '10',
+        'address.locality.district' => '02',
+    ]);
+
+    $klang = District::create(['state_id' => $this->state->id, 'code' => '02', 'name' => 'Klang']);
+
+    expect(District::local()?->id)->toBe($klang->id);
+
+    // Bypass events so District's cache stays warm.
+    DB::table('states')->where('id', $this->state->id)->update(['code' => 'XX']);
+    expect(District::local()?->id)->toBe($klang->id);
+
+    $this->state->save();
+
+    expect(District::local())->toBeNull();
+});
+
+it('invalidates local() when the grandparent Country saves', function () {
+    config([
+        'address.locality.country' => 'MYS',
+        'address.locality.state' => '10',
+        'address.locality.district' => '02',
+    ]);
+
+    $klang = District::create(['state_id' => $this->state->id, 'code' => '02', 'name' => 'Klang']);
+
+    expect(District::local()?->id)->toBe($klang->id);
+
+    DB::table('countries')->where('id', $this->country->id)->update(['code' => 'XXX']);
+    expect(District::local()?->id)->toBe($klang->id);
+
+    $this->country->save();
 
     expect(District::local())->toBeNull();
 });

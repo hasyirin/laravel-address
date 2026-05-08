@@ -12,7 +12,7 @@ Comes with built-in geographical data for Malaysia and a seeder command to popul
 ## Requirements
 
 - PHP 8.4+
-- Laravel 11 or 12
+- Laravel 12 or 13
 
 ## Installation
 
@@ -158,16 +158,51 @@ $copy->addressable()->associate($anotherModel);
 $copy->save();
 ```
 
+## Locality
+
+Designate a "local" country, state, and district by setting their codes in `config/address.php`:
+
+```php
+'locality' => [
+    'country' => 'MYS',
+    'state' => '14',
+    'district' => '02',
+],
+```
+
+Resolve them anywhere via the static helper — it enforces the parent chain, so a state only counts as local if its country also matches the configured code:
+
+```php
+Country::local();   // ?Country
+State::local();     // ?State — matches state code AND parent country
+District::local();  // ?District — matches district code AND parent state AND parent country
+```
+
+If any level is null in the config, the corresponding `local()` returns `null`.
+
+Compose with the `local()` query scope:
+
+```php
+District::query()->local()->where(...)->get();
+```
+
+The result is memoized per request via `cache()->memo()`. `saved` and `deleted` listeners on each model cascade-clear caches down the chain (`Country` save clears `State` and `District` caches too). For manual invalidation:
+
+```php
+Country::clearLocalCache();
+```
+
 ## Configuration
 
 ```php
 // config/address.php
 
 return [
-    // Mark a country/state as "local" during seeding
+    // Codes used to resolve `Country::local()`, `State::local()`, `District::local()`
     'locality' => [
-        'country' => null, // e.g. 'MYS'
-        'state' => null,   // e.g. '01'
+        'country' => null,  // e.g. 'MYS'
+        'state' => null,    // e.g. '14'
+        'district' => null, // e.g. '02'
     ],
 
     // Override model classes
@@ -208,14 +243,14 @@ Each `Address` belongs to a `Country`, `State`, and optionally a `PostOffice`, a
 
 ## Models
 
-| Model | Key Fields |
-|---|---|
-| `Country` | `code` (ISO 3166-1 alpha-3), `alpha_2`, `name`, `local` |
-| `State` | `code`, `name`, `local`, belongs to `Country` |
-| `District` | `code`, `name`, belongs to `State` |
-| `Subdistrict` | `code`, `name`, belongs to `District` |
-| `PostOffice` | `name`, `postcodes` (JSON array), belongs to `State` |
-| `Address` | `type`, `line_1`-`line_3`, `postcode`, `latitude`, `longitude`, `properties` (JSON) |
+| Model         | Key Fields                                                                          |
+|---------------|-------------------------------------------------------------------------------------|
+| `Country`     | `code` (ISO 3166-1 alpha-3), `alpha_2`, `name`                                      |
+| `State`       | `code`, `name`, belongs to `Country`                                                |
+| `District`    | `code`, `name`, belongs to `State`                                                  |
+| `Subdistrict` | `code`, `name`, belongs to `District`                                               |
+| `PostOffice`  | `name`, `postcodes` (JSON array), belongs to `State`                                |
+| `Address`     | `type`, `line_1`-`line_3`, `postcode`, `latitude`, `longitude`, `properties` (JSON) |
 
 All models use soft deletes.
 

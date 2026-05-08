@@ -2,6 +2,19 @@
 
 All notable changes to `laravel-address` will be documented in this file.
 
+## v4.0.0
+
+### Breaking changes
+
+- Dropped Laravel 11 support — minimum is now Laravel 12. `illuminate/contracts` requires `^12.0||^13.0`; dev `orchestra/testbench` requires `^10.0||^11.0`. CI matrix Laravel 11 row removed.
+
+### Added
+
+- `local()` is now memoized per request via `cache()->memo()->rememberForever(...)` keyed by `'address.locality.{Country|State|District}'`
+- `HasLocality::bootHasLocality()` registers `saved`/`deleted` listeners that call `clearLocalCache()` so mutations invalidate the memo within the same request
+- Cross-class invalidation: each model declares its `localityDescendants()`; `clearLocalCache()` cascades down the chain, so saving a `Country` clears `State` and `District` caches in the same request without registering listeners on ancestor classes
+- Public `clearLocalCache()` on each model for manual invalidation
+
 ## v3.0.0
 
 ### Breaking changes

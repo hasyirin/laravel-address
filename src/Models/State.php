@@ -72,4 +72,12 @@ class State extends Model implements Localizable
         $query->where('code', config('address.locality.state'))
             ->whereHas('country', fn (Builder $q) => $q->where('code', config('address.locality.country')));
     }
+
+    /**
+     * @return array<int, class-string>
+     */
+    protected static function localityDescendants(): array
+    {
+        return [config('address.models.district')];
+    }
 }
