@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-address` will be documented in this file.
 
+## v4.0.1
+
+- Tightened `phpstan/phpstan-deprecation-rules` and `phpstan/phpstan-phpunit` dev constraints to `^2.0` — `larastan: ^3.0` already pins PHPStan 2, so the `^1.x` legs were unreachable
+
 ## v4.0.0
 
 ### Breaking changes
