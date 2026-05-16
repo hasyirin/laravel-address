@@ -1,6 +1,6 @@
 {
     "name": "hasyirin/laravel-address",
-    "description": "This is my package laravel-address",
+    "description": "Polymorphic address management for Laravel with hierarchical geographical data and built-in Malaysian dataset.",
     "keywords": [
         "Hasyirin Fakhriy",
         "laravel",
