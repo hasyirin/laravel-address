@@ -40,11 +40,9 @@ class State extends Model implements Localizable
         'name',
     ];
 
-    public function __construct(array $attributes = [])
+    public function getTable(): string
     {
-        parent::__construct($attributes);
-
-        $this->table = config('address.tables.states', parent::getTable());
+        return $this->table ?? config('address.tables.states', parent::getTable());
     }
 
     public function country(): BelongsTo

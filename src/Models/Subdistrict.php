@@ -33,11 +33,9 @@ class Subdistrict extends Model
         'name',
     ];
 
-    public function __construct(array $attributes = [])
+    public function getTable(): string
     {
-        parent::__construct($attributes);
-
-        $this->table = config('address.tables.subdistricts', parent::getTable());
+        return $this->table ?? config('address.tables.subdistricts', parent::getTable());
     }
 
     public function district(): BelongsTo

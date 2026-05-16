@@ -41,11 +41,9 @@ class Country extends Model implements Localizable
         'alpha_2',
     ];
 
-    public function __construct(array $attributes = [])
+    public function getTable(): string
     {
-        parent::__construct($attributes);
-
-        $this->table = config('address.tables.countries', parent::getTable());
+        return $this->table ?? config('address.tables.countries', parent::getTable());
     }
 
     public function states(): HasMany

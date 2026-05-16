@@ -70,11 +70,9 @@ class Address extends Model
         ];
     }
 
-    public function __construct(array $attributes = [])
+    public function getTable(): string
     {
-        parent::__construct($attributes);
-
-        $this->table = config('address.tables.addresses', parent::getTable());
+        return $this->table ?? config('address.tables.addresses', parent::getTable());
     }
 
     protected static function boot(): void

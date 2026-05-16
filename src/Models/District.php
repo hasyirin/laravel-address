@@ -39,11 +39,9 @@ class District extends Model implements Localizable
         'name',
     ];
 
-    public function __construct(array $attributes = [])
+    public function getTable(): string
     {
-        parent::__construct($attributes);
-
-        $this->table = config('address.tables.districts', parent::getTable());
+        return $this->table ?? config('address.tables.districts', parent::getTable());
     }
 
     public function state(): BelongsTo
