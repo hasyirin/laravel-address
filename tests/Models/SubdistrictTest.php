@@ -45,3 +45,14 @@ it('supports soft deletes', function () {
     expect(Subdistrict::count())->toBe(0)
         ->and(Subdistrict::withTrashed()->count())->toBe(1);
 });
+
+it('generates a per-district unique code for every subdistrict the factory creates', function () {
+    // subdistricts.code is unique per district. A batch sharing one district collided
+    // intermittently while codes were drawn from a fixed 100-value pool.
+    $count = 60;
+
+    Subdistrict::factory()->count($count)->create(['district_id' => $this->district->id]);
+
+    expect(Subdistrict::count())->toBe($count)
+        ->and(Subdistrict::pluck('code')->unique())->toHaveCount($count);
+});

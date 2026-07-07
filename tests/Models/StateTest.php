@@ -125,3 +125,14 @@ it('supports soft deletes', function () {
     expect(State::count())->toBe(0)
         ->and(State::withTrashed()->count())->toBe(1);
 });
+
+it('generates a per-country unique code for every state the factory creates', function () {
+    // states.code is unique per country. A batch sharing one country collided
+    // intermittently while codes were drawn from a fixed 100-value pool.
+    $count = 60;
+
+    State::factory()->count($count)->create(['country_id' => $this->country->id]);
+
+    expect(State::count())->toBe($count)
+        ->and(State::pluck('code')->unique())->toHaveCount($count);
+});

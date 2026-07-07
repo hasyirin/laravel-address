@@ -20,7 +20,7 @@ class StateFactory extends Factory
     {
         return [
             'country_id' => Country::factory(),
-            'code' => fake()->numerify('##'),
+            'code' => fake()->unique()->numerify('####'),
             // @phpstan-ignore-next-line method.notFound
             'name' => fake()->state(),
         ];

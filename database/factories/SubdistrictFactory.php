@@ -20,7 +20,7 @@ class SubdistrictFactory extends Factory
     {
         return [
             'district_id' => District::factory(),
-            'code' => fake()->numerify('##'),
+            'code' => fake()->unique()->numerify('####'),
             'name' => fake()->city(),
         ];
     }

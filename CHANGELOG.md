@@ -2,6 +2,12 @@
 
 All notable changes to `laravel-address` will be documented in this file.
 
+## v4.0.3
+
+- Fixed intermittent unique-constraint failures when generating records through the model factories. `CountryFactory` now draws `code` via `fake()->unique()->countryISOAlpha3()`, so `Country::factory()->count($n)->create()` no longer collides on the global `countries.code` unique index — previously a birthday-paradox failure over Faker's fixed ~249-value ISO alpha-3 pool (~16% at 10 rows, ~99.9% at 60)
+- Applied the same guard to `StateFactory`, `DistrictFactory`, and `SubdistrictFactory`, generating `code` via `fake()->unique()->numerify('####')`. Batches of children sharing one parent (e.g. `State::factory()->count($n)->create(['country_id' => $id])`) no longer collide on the per-parent `(parent_id, code)` unique index; the 4-digit width keeps ample headroom since `unique()` buckets its used-set by formatter name
+- Replaced the placeholder `composer.json` description with a real one
+
 ## v4.0.2
 
 - Replaced `__construct` overrides with `getTable()` overrides on `Address`, `Country`, `District`, `PostOffice`, `State`, and `Subdistrict` — `return $this->table ?? config('address.tables.X', parent::getTable())`. Subclasses that set `protected $table = '...'` are now respected instead of being overwritten by the parent constructor.

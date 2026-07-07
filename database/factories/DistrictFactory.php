@@ -20,7 +20,7 @@ class DistrictFactory extends Factory
     {
         return [
             'state_id' => State::factory(),
-            'code' => fake()->numerify('##'),
+            'code' => fake()->unique()->numerify('####'),
             'name' => fake()->city(),
         ];
     }

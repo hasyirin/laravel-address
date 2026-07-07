@@ -111,3 +111,15 @@ it('supports soft deletes', function () {
     expect(Country::count())->toBe(0)
         ->and(Country::withTrashed()->count())->toBe(1);
 });
+
+it('generates a unique code for every country the factory creates', function () {
+    // countries.code carries a global unique constraint. The factory must never
+    // draw a duplicate, otherwise batches collide intermittently (birthday paradox
+    // over Faker's fixed ~249-value ISO alpha-3 pool).
+    $count = 100;
+
+    Country::factory()->count($count)->create();
+
+    expect(Country::count())->toBe($count)
+        ->and(Country::pluck('code')->unique())->toHaveCount($count);
+});

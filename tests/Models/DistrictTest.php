@@ -122,3 +122,14 @@ it('supports soft deletes', function () {
     expect(District::count())->toBe(0)
         ->and(District::withTrashed()->count())->toBe(1);
 });
+
+it('generates a per-state unique code for every district the factory creates', function () {
+    // districts.code is unique per state. A batch sharing one state collided
+    // intermittently while codes were drawn from a fixed 100-value pool.
+    $count = 60;
+
+    District::factory()->count($count)->create(['state_id' => $this->state->id]);
+
+    expect(District::count())->toBe($count)
+        ->and(District::pluck('code')->unique())->toHaveCount($count);
+});
