@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-address` will be documented in this file.
 
+## v4.0.4
+
+- Fixed `Country::local()` / `State::local()` / `District::local()` throwing a `__PHP_Incomplete_Class` type error under a serializing cache store such as redis. `HasLocality::local()` cached the resolved Eloquent model via `cache()->memo()->rememberForever(...)`; a persistent store serializes the model and hands it back as an incomplete class on a later request, violating the `?static` return type. It now caches the row's raw attributes and rehydrates with `newFromBuilder()`, preserving the cross-request cache while storing only serialization-safe scalars. The defect was masked by the `array` cache store used in the test suite, which holds live objects and never serializes
+
 ## v4.0.3
 
 - Fixed intermittent unique-constraint failures when generating records through the model factories. `CountryFactory` now draws `code` via `fake()->unique()->countryISOAlpha3()`, so `Country::factory()->count($n)->create()` no longer collides on the global `countries.code` unique index — previously a birthday-paradox failure over Faker's fixed ~249-value ISO alpha-3 pool (~16% at 10 rows, ~99.9% at 60)

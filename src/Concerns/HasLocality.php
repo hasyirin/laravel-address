@@ -20,11 +20,18 @@ trait HasLocality
 
     public static function local(): ?static
     {
-        /** @var ?static */
-        return cache()->memo()->rememberForever(
+        // Cache the row's raw attributes, never the model instance: a persistent
+        // store (e.g. redis) serializes a cached Eloquent model and hands it back
+        // as a __PHP_Incomplete_Class on later requests. Rehydrate from the snapshot.
+        /** @var array<string, mixed>|null $attributes */
+        $attributes = cache()->memo()->rememberForever(
             static::localCacheKey(),
-            fn () => static::query()->local()->first(),
+            fn () => static::query()->local()->first()?->getAttributes(),
         );
+
+        return $attributes === null
+            ? null
+            : static::query()->getModel()->newFromBuilder($attributes);
     }
 
     public static function clearLocalCache(): void
