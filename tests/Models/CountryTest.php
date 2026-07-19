@@ -85,6 +85,19 @@ it('caches local() across requests as a serialization-safe snapshot', function (
         ->and($cached['code'])->toBe('MYS');
 });
 
+it('returns a local() instance that Model::is() recognizes as the same record', function () {
+    // Regression: local() rehydrates via newFromBuilder() without an explicit
+    // connection, so it falls back to the query builder's own (never-connected)
+    // model instance, leaving getConnectionName() null. Model::is() compares key,
+    // table, AND connection name, so this silently broke local() as an identity
+    // check (e.g. "is this the record I'm about to delete?").
+    config(['address.locality.country' => 'MYS']);
+
+    $country = Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
+
+    expect($country->is(Country::local()))->toBeTrue();
+});
+
 it('has many states', function () {
     $country = Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
     State::create(['country_id' => $country->id, 'code' => '14', 'name' => 'Kuala Lumpur']);

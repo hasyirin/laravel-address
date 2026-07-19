@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-address` will be documented in this file.
 
+## v4.0.5
+
+- Fixed `Country::local()` / `State::local()` / `District::local()` rehydrating with a `null` connection name, which silently broke `$model->is(Country::local())` identity checks (`Model::is()` compares primary key, table, *and* connection name). Introduced in v4.0.4: `HasLocality::local()` rehydrates via `newFromBuilder($attributes)` on `static::query()->getModel()` — the query builder's own template model, which (unlike a normally-queried/hydrated instance) is never routed through Eloquent's `newModelInstance()`, so its `getConnectionName()` returns `null` on any model without an explicit `$connection` override. `newFromBuilder()`'s implicit `$connection` fallback then carried that `null` through. It now resolves the connection via `$model->getConnection()->getName()` instead of `getConnectionName()` — this resolves the app's actual default connection rather than returning the unset override, matching what a normally-queried instance reports.
+
 ## v4.0.4
 
 - Fixed `Country::local()` / `State::local()` / `District::local()` throwing a `__PHP_Incomplete_Class` type error under a serializing cache store such as redis. `HasLocality::local()` cached the resolved Eloquent model via `cache()->memo()->rememberForever(...)`; a persistent store serializes the model and hands it back as an incomplete class on a later request, violating the `?static` return type. It now caches the row's raw attributes and rehydrates with `newFromBuilder()`, preserving the cross-request cache while storing only serialization-safe scalars. The defect was masked by the `array` cache store used in the test suite, which holds live objects and never serializes
