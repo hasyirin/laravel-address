@@ -2,6 +2,11 @@
 
 All notable changes to `laravel-address` will be documented in this file.
 
+## v4.0.6
+
+- Added Pest 5 to the `pestphp/pest`, `pestphp/pest-plugin-arch`, and `pestphp/pest-plugin-laravel` dev constraints (`^4.0||^5.0`). Laravel 13 now resolves Pest 5; Laravel 12 stays on Pest 4, because Pest 5 requires `symfony/process` `^8.1` and PHPUnit 13 — Laravel 12 pins `symfony/process` to `^7.2`, and testbench 10 conflicts with PHPUnit `>=13.2`
+- Dropped Pest 3 from the same constraints. Under `prefer-lowest` on Laravel 12 it resolved alongside testbench 10.0.0, whose bundled `config/database.php` reads `PDO::MYSQL_ATTR_SSL_CA` — deprecated in PHP 8.5, so every test in the PHP 8.5 / Laravel 12 / `prefer-lowest` CI job was reported as deprecated
+
 ## v4.0.5
 
 - Fixed `Country::local()` / `State::local()` / `District::local()` rehydrating with a `null` connection name, which silently broke `$model->is(Country::local())` identity checks (`Model::is()` compares primary key, table, *and* connection name). Introduced in v4.0.4: `HasLocality::local()` rehydrates via `newFromBuilder($attributes)` on `static::query()->getModel()` — the query builder's own template model, which (unlike a normally-queried/hydrated instance) is never routed through Eloquent's `newModelInstance()`, so its `getConnectionName()` returns `null` on any model without an explicit `$connection` override. `newFromBuilder()`'s implicit `$connection` fallback then carried that `null` through. It now resolves the connection via `$model->getConnection()->getName()` instead of `getConnectionName()` — this resolves the app's actual default connection rather than returning the unset override, matching what a normally-queried instance reports.
