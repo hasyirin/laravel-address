@@ -22,17 +22,22 @@ trait HasLocality
     {
         $query = static::query();
 
+        $locality = (array) config('address.locality');
+
         // Cache the row's raw attributes, never the model instance: a persistent
         // store (e.g. redis) serializes a cached Eloquent model and hands it back
         // as a __PHP_Incomplete_Class on later requests. Rehydrate from the snapshot.
-        /** @var array<string, mixed>|null $attributes */
-        $attributes = cache()->memo()->rememberForever(
-            static::localCacheKey(),
-            fn () => $query->local()->first()?->getAttributes(),
-        );
+        $snapshot = cache()->memo()->get(static::localCacheKey());
 
-        if ($attributes === null) {
-            return null;
+        if (! is_array($snapshot) || ($snapshot['locality'] ?? null) !== $locality) {
+            $attributes = $query->local()->first()?->getAttributes();
+
+            // Never cache a miss: rows inserted without model events would stay hidden.
+            if ($attributes === null) {
+                return null;
+            }
+
+            cache()->memo()->forever(static::localCacheKey(), $snapshot = ['locality' => $locality, 'attributes' => $attributes]);
         }
 
         // getModel() is the builder's own template instance, never routed through
@@ -41,7 +46,7 @@ trait HasLocality
         // instead of returning null, matching what a normally-queried instance reports.
         $model = $query->getModel();
 
-        return $model->newFromBuilder($attributes, $model->getConnection()->getName());
+        return $model->newFromBuilder($snapshot['attributes'], $model->getConnection()->getName());
     }
 
     public static function clearLocalCache(): void

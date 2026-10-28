@@ -4,7 +4,11 @@ use Hasyirin\Address\Models\Address;
 use Hasyirin\Address\Models\Country;
 use Hasyirin\Address\Models\PostOffice;
 use Hasyirin\Address\Models\State;
+use Hasyirin\Address\Tests\Fixtures\EncryptedAddress;
 use Hasyirin\Address\Tests\Fixtures\User;
+use Illuminate\Database\Eloquent\MissingAttributeException;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 beforeEach(function () {
     $this->user = User::create(['name' => 'Test User']);
@@ -45,6 +49,13 @@ it('casts properties to array', function () {
 
     $fresh = $address->fresh();
     expect($fresh->properties)->toBeArray()->toBe(['floor' => '3', 'unit' => 'A']);
+});
+
+it('casts coordinates to float', function () {
+    $address = new Address(['latitude' => '3.1390', 'longitude' => '101.6869']);
+
+    expect($address->latitude)->toBe(3.139)
+        ->and($address->longitude)->toBe(101.6869);
 });
 
 it('defaults properties to empty array', function () {
@@ -119,6 +130,77 @@ it('trims trailing commas on line fields when saving', function () {
         ->and($address->line_3)->toBe('Area Test');
 });
 
+it('keeps empty line fields null when saving', function () {
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create(['line_2' => null, 'line_3' => null]);
+
+    $row = DB::table('addresses')->where('id', $address->id)->first();
+
+    expect($row->line_2)->toBeNull()
+        ->and($row->line_3)->toBeNull();
+});
+
+it('keeps line fields that were not selected when saving', function () {
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create([
+            'type' => 'primary',
+            'line_1' => 'No. 1',
+            'line_2' => 'Taman Test',
+        ]);
+
+    $partial = Address::query()->select(['id', 'type'])->find($address->id);
+    $partial->type = 'billing';
+    $partial->save();
+
+    expect($address->fresh())
+        ->type->toBe('billing')
+        ->line_1->toBe('No. 1')
+        ->line_2->toBe('Taman Test');
+});
+
+it('does not update an unchanged address when saving', function () {
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create()
+        ->fresh();
+
+    $address->save();
+
+    expect($address->getChanges())->toBe([]);
+});
+
+it('normalizes line fields through subclass casts', function () {
+    config(['app.key' => 'base64:'.base64_encode(str_repeat('k', 32))]);
+
+    $address = EncryptedAddress::create([
+        'addressable_type' => User::class,
+        'addressable_id' => $this->user->id,
+        'type' => 'primary',
+        'line_1' => '  No. 1,   Jalan Test,  ',
+    ]);
+
+    expect($address->fresh()->line_1)->toBe('No. 1, Jalan Test')
+        ->and(DB::table('addresses')->where('id', $address->id)->value('line_1'))->not->toBe('No. 1, Jalan Test');
+});
+
+it('reports an unselected line field under strict mode', function () {
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create();
+
+    Model::preventAccessingMissingAttributes();
+
+    try {
+        $partial = Address::query()->select(['id'])->find($address->id);
+
+        expect(fn () => $partial->line_1)->toThrow(MissingAttributeException::class);
+    } finally {
+        Model::preventAccessingMissingAttributes(false);
+    }
+});
+
 // -- formatted() --
 
 it('formats address with all parts', function () {
@@ -189,6 +271,31 @@ it('formats address capitalized', function () {
     expect($formatted)->toBe('NO. 1, JALAN TEST');
 });
 
+it('capitalizes multibyte characters when formatting', function () {
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create([
+            'line_1' => 'Jalan Café',
+            'line_2' => null,
+            'postcode' => null,
+        ])->fresh();
+
+    expect($address->formatted(state: false, country: false, capitalize: true))->toBe('JALAN CAFÉ');
+});
+
+it('skips empty line fields when formatting before a refresh', function () {
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create([
+            'line_1' => 'No. 1',
+            'line_2' => null,
+            'line_3' => null,
+            'postcode' => '40000',
+        ]);
+
+    expect($address->formatted())->toBe('No. 1, 40000');
+});
+
 // -- render() --
 
 it('renders address inline', function () {
@@ -241,6 +348,88 @@ it('renders address capitalized', function () {
     expect($rendered)->toContain('NO. 1, JALAN TEST');
 });
 
+it('capitalizes multibyte characters when rendering', function () {
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create([
+            'line_1' => 'Jalan Café',
+            'line_2' => null,
+            'postcode' => null,
+        ])->fresh();
+
+    expect($address->render(inline: true, state: false, country: false, capitalize: true))->toBe('JALAN CAFÉ');
+});
+
+it('escapes html when rendering as block', function () {
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create([
+            'line_1' => '<script>alert(1)</script>',
+            'line_2' => null,
+            'postcode' => '40000',
+        ])->fresh();
+
+    expect($address->render(state: false, country: false))
+        ->toBe("<p class=\"mb-0\">&lt;script&gt;alert(1)&lt;/script&gt;,</p>\n<p class=\"mb-0\">40000</p>");
+});
+
+it('keeps inline output as plain text', function () {
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create([
+            'line_1' => "Jalan Dato' Onn",
+            'line_2' => 'Lot 5 & 6',
+            'postcode' => '40000',
+        ])->fresh();
+
+    expect($address->render(inline: true, state: false, country: false))
+        ->toBe("Jalan Dato' Onn,\nLot 5 & 6,\n40000");
+});
+
+it('drops parts that are empty after trimming when rendering capitalized', function () {
+    $postOffice = PostOffice::create([
+        'state_id' => $this->state->id,
+        'name' => 'Kukup',
+        'postcodes' => ['82300'],
+    ]);
+
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create([
+            'post_office_id' => $postOffice->id,
+            'line_1' => null,
+            'line_2' => null,
+            'postcode' => ',',
+        ])->fresh();
+
+    expect($address->render(state: false, country: false, capitalize: true))
+        ->toBe('<p class="mb-0">KUKUP</p>');
+});
+
+it('keeps the last character of the last line when rendering as block', function () {
+    $postOffice = PostOffice::create([
+        'state_id' => $this->state->id,
+        'name' => 'Kukup',
+        'postcodes' => ['82300'],
+    ]);
+
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create([
+            'post_office_id' => $postOffice->id,
+            'line_1' => 'No. 1',
+            'line_2' => null,
+            'postcode' => '82300',
+        ])->fresh();
+
+    expect($address->render(state: false, country: false))
+        ->toBe("<p class=\"mb-0\">No. 1,</p>\n<p class=\"mb-0\">82300, Kukup</p>");
+});
+
+it('renders an empty string for an address without parts', function () {
+    expect($this->user->address->render())->toBe('');
+});
+
 it('copy an address without addressable or type', function () {
     $original = Address::factory()
         ->for($this->user, 'addressable')
@@ -269,6 +458,26 @@ it('copy an address without addressable or type', function () {
         ->and($copy->line_1)->toBe('No. 1')
         ->and($copy->line_2)->toBe('Taman Test')
         ->and($copy->postcode)->toBe('40000');
+});
+
+it('copies a trashed address as not trashed', function () {
+    $original = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create();
+
+    $original->delete();
+
+    expect($original->copy()->deleted_at)->toBeNull();
+});
+
+it('copies an address without its loaded addressable', function () {
+    $original = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create();
+
+    $original->load('addressable');
+
+    expect($original->copy()->relationLoaded('addressable'))->toBeFalse();
 });
 
 // -- scopeOfType --

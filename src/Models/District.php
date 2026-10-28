@@ -51,12 +51,12 @@ class District extends Model implements Localizable
 
     public function subdistricts(): HasMany
     {
-        return $this->hasMany(config('address.models.subdistrict'));
+        return $this->hasMany(config('address.models.subdistrict'), 'district_id');
     }
 
     public function scopeLocal(Builder $query): void
     {
-        $query->where('code', config('address.locality.district'))
+        $query->where($query->qualifyColumn('code'), config('address.locality.district'))
             ->whereHas('state', function (Builder $q) {
                 $q->where('code', config('address.locality.state'))
                     ->whereHas('country', fn (Builder $r) => $r->where('code', config('address.locality.country')));

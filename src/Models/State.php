@@ -52,22 +52,22 @@ class State extends Model implements Localizable
 
     public function districts(): HasMany
     {
-        return $this->hasMany(config('address.models.district'));
+        return $this->hasMany(config('address.models.district'), 'state_id');
     }
 
     public function postOffices(): HasMany
     {
-        return $this->hasMany(config('address.models.post-office'));
+        return $this->hasMany(config('address.models.post-office'), 'state_id');
     }
 
     public function addresses(): HasMany
     {
-        return $this->hasMany(config('address.models.address'));
+        return $this->hasMany(config('address.models.address'), 'state_id');
     }
 
     public function scopeLocal(Builder $query): void
     {
-        $query->where('code', config('address.locality.state'))
+        $query->where($query->qualifyColumn('code'), config('address.locality.state'))
             ->whereHas('country', fn (Builder $q) => $q->where('code', config('address.locality.country')));
     }
 

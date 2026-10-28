@@ -5,6 +5,7 @@ use Hasyirin\Address\Models\Country;
 use Hasyirin\Address\Models\District;
 use Hasyirin\Address\Models\PostOffice;
 use Hasyirin\Address\Models\State;
+use Hasyirin\Address\Tests\Fixtures\Province;
 use Hasyirin\Address\Tests\Fixtures\User;
 use Illuminate\Support\Facades\DB;
 
@@ -35,6 +36,23 @@ it('returns the local state via static method', function () {
 
     expect(State::local())->toBeInstanceOf(State::class)
         ->id->toBe($local->id);
+});
+
+it('applies the local scope to a query that joins countries', function () {
+    config([
+        'address.locality.country' => 'MYS',
+        'address.locality.state' => '14',
+    ]);
+
+    $kl = State::create(['country_id' => $this->country->id, 'code' => '14', 'name' => 'Kuala Lumpur']);
+
+    $state = State::query()
+        ->select('states.*')
+        ->join('countries', 'countries.id', '=', 'states.country_id')
+        ->local()
+        ->first();
+
+    expect($state?->id)->toBe($kl->id);
 });
 
 it('returns null when locality state config is unset', function () {
@@ -79,9 +97,6 @@ it('invalidates local() when the parent Country saves', function () {
     expect(State::local())->toBeNull();
 });
 
-// NOTE: State::country() has a bug — it uses config('address.models.state') instead of
-// config('address.models.country'). This test documents the CORRECT expected behavior.
-// It will fail until the bug is fixed.
 it('belongs to a country', function () {
     $state = State::create(['country_id' => $this->country->id, 'code' => '10', 'name' => 'Selangor']);
 
@@ -118,6 +133,26 @@ it('has many addresses', function () {
     expect($state->addresses)->toHaveCount(1);
 });
 
+it('resolves its relations when the state model has another class name', function () {
+    config(['address.models.state' => Province::class]);
+
+    $province = Province::create(['country_id' => $this->country->id, 'code' => '10', 'name' => 'Selangor']);
+    District::create(['state_id' => $province->id, 'code' => '01', 'name' => 'Petaling']);
+    PostOffice::create(['state_id' => $province->id, 'name' => 'Shah Alam', 'postcodes' => ['40000']]);
+    Address::create([
+        'addressable_type' => User::class,
+        'addressable_id' => User::create(['name' => 'Test'])->id,
+        'state_id' => $province->id,
+        'type' => 'primary',
+    ]);
+
+    expect($province->districts)->toHaveCount(1)
+        ->and($province->postOffices)->toHaveCount(1)
+        ->and($province->addresses)->toHaveCount(1)
+        ->and($this->country->districts)->toHaveCount(1)
+        ->and($this->country->postOffices)->toHaveCount(1);
+});
+
 it('supports soft deletes', function () {
     $state = State::create(['country_id' => $this->country->id, 'code' => '10', 'name' => 'Selangor']);
     $state->delete();
@@ -135,4 +170,10 @@ it('generates a per-country unique code for every state the factory creates', fu
 
     expect(State::count())->toBe($count)
         ->and(State::pluck('code')->unique())->toHaveCount($count);
+});
+
+it('makes a state with the factory under a faker locale without states', function () {
+    config(['app.faker_locale' => 'en_GB']);
+
+    expect(State::factory()->make()->name)->toBeString()->not->toBeEmpty();
 });

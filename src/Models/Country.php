@@ -19,7 +19,7 @@ use Illuminate\Support\Collection;
  * @property int $id
  * @property string $code
  * @property string $name
- * @property string $alpha_2
+ * @property ?string $alpha_2
  * @property Collection $states
  * @property Collection $districts
  * @property Collection $postOffices
@@ -48,27 +48,27 @@ class Country extends Model implements Localizable
 
     public function states(): HasMany
     {
-        return $this->hasMany(config('address.models.state'));
+        return $this->hasMany(config('address.models.state'), 'country_id');
     }
 
     public function districts(): HasManyThrough
     {
-        return $this->hasManyThrough(config('address.models.district'), config('address.models.state'));
+        return $this->hasManyThrough(config('address.models.district'), config('address.models.state'), 'country_id', 'state_id');
     }
 
     public function postOffices(): HasManyThrough
     {
-        return $this->hasManyThrough(config('address.models.post-office'), config('address.models.state'));
+        return $this->hasManyThrough(config('address.models.post-office'), config('address.models.state'), 'country_id', 'state_id');
     }
 
     public function addresses(): HasMany
     {
-        return $this->hasMany(config('address.models.address'));
+        return $this->hasMany(config('address.models.address'), 'country_id');
     }
 
     public function scopeLocal(Builder $query): void
     {
-        $query->where('code', config('address.locality.country'));
+        $query->where($query->qualifyColumn('code'), config('address.locality.country'));
     }
 
     /**

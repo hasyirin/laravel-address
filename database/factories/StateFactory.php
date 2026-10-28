@@ -22,7 +22,7 @@ class StateFactory extends Factory
             'country_id' => Country::factory(),
             'code' => fake()->unique()->numerify('####'),
             // @phpstan-ignore-next-line method.notFound
-            'name' => fake()->state(),
+            'name' => fake('ms_MY')->state(),
         ];
     }
 }

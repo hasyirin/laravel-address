@@ -2,6 +2,46 @@
 
 All notable changes to `laravel-address` will be documented in this file.
 
+## v4.1.0
+
+### Security
+
+- `Address::render()` now escapes every value with `e()` in block mode. It inserted address lines and names into the HTML as-is, so markup stored in an address ran wherever the result was output with `{!! !!}`. Inline mode still returns plain text
+
+### Fixed
+
+- The `Address` `saving` hook now normalizes only the line fields that changed and are not `null`. It rewrote all three lines on every save, so:
+  - saving a partially selected address no longer blanks the unselected lines (or throws `MissingAttributeException` under `Model::preventAccessingMissingAttributes()`)
+  - saving an unchanged address no longer issues an `UPDATE`
+  - `null` lines stay `null` instead of being stored as `''`
+  - the lines hold plain strings instead of `Stringable` objects, so `formatted()` right after `create()` no longer returns empty segments (`'No. 1, , , 40000'`)
+- `render()` no longer strips trailing `p`, `<`, `/` or `>` characters from the last line (`Kukup` rendered as `Kuku`), drops parts that are empty after trimming (a postcode of `','` rendered as `', Kukup'`), and returns `''` instead of `'</p>'` for an address without parts
+- `formatted(capitalize: true)` and `render(capitalize: true)` now uppercase multibyte characters
+- `copy()` no longer copies `deleted_at` or the loaded `addressable` relation, so a copy of a trashed address is no longer saved as trashed
+- `address()` and `getAddress()` now set `type` on models made with `create()`, `make()`, or `save()` through the relation. `$user->getAddress('billing')->create([...])` no longer fails on the `type` NOT NULL constraint. `forceCreate()` sets it only on Laravel 13.35 and later, where the framework applies the relation's pending attributes
+- `local()` now stores the locality codes with its cached snapshot and resolves the row again when the configured codes change. A config change no longer keeps returning the previous row from the cache on later requests, and a save still clears the entry whatever the config. Entries written by earlier versions are ignored, including the model objects cached by v4.0.0–v4.0.3, which rehydrated as a model with a `null` id and code
+- `scopeLocal()` on `Country`, `State`, and `District` now qualifies the `code` column. `$country->districts()->local()` no longer fails with `ambiguous column name: code`
+- `HasMany` and `HasManyThrough` relations on `Country`, `State`, and `District` now pass explicit foreign keys, so a subclass with another class name (e.g. `Nation extends Country`) keeps resolving `country_id`, `state_id`, and `district_id`
+- `address:seed`:
+  - no longer throws `LazyLoadingViolationException` under `Model::preventLazyLoading()` or `Model::shouldBeStrict()`
+  - updates soft-deleted rows instead of failing on the unique index (or creating duplicate post offices); the rows stay soft-deleted. When a live row and a soft-deleted duplicate both exist, it updates the live row
+  - reads `base_path('data')` only when it contains `countries.json`, instead of failing on any unrelated `data` directory
+  - throws an error that names the file when a JSON file is invalid, instead of skipping the file or failing with a `TypeError`
+  - no longer queries each state and district again to resolve its parent
+- `CountryFactory` now generates codes that cannot collide with ISO alpha-3 codes, so it works after `address:seed`
+- `StateFactory` now draws state names from the `ms_MY` Faker locale, so it works when `app.faker_locale` has no `state()` formatter (e.g. `en_GB`)
+- Removed the `Address` entry from `extra.laravel.aliases`. It pointed to a facade that does not exist and replaced any `Address` alias defined by the application
+- Fixed the publish tags in the README (`address-migrations`, `address-config`) and documented the `address-data` tag
+
+### Changed
+
+- Raised the `illuminate/contracts` floor to `^12.9`. `local()` uses `cache()->memo()`, which Laravel added in v12.9.0
+- `Address` now casts `latitude` and `longitude` to `float`
+- `address:seed` now follows the data files down from `countries.json` and reads each level only for the parents listed in the level above. Earlier versions also read the files of parent rows that existed only in the database. The protected per-level methods of `SeedCommand` are merged into `seed()`
+- CI now runs the tests on pushes to `main`, on pull requests, and on changes to migration stubs and seed data, and runs PHPStan on `composer.json` changes
+- Removed the unused `resources/views` directory, the empty `package-lock.json`, the completed `TODO.md`, and the `Workbench\App` autoload-dev entry
+- Removed the 118 empty `subdistricts.json` placeholder files from the bundled data. `address:seed` still treats an empty file as having no rows, so data published by earlier versions keeps working
+
 ## v4.0.6
 
 - Added Pest 5 to the `pestphp/pest`, `pestphp/pest-plugin-arch`, and `pestphp/pest-plugin-laravel` dev constraints (`^4.0||^5.0`). Laravel 13 now resolves Pest 5; Laravel 12 stays on Pest 4, because Pest 5 requires `symfony/process` `^8.1` and PHPUnit 13 — Laravel 12 pins `symfony/process` to `^7.2`, and testbench 10 conflicts with PHPUnit `>=13.2`

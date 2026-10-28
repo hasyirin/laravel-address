@@ -2,17 +2,17 @@
 
 namespace Hasyirin\Address\Commands;
 
-use Hasyirin\Address\Models\Country;
-use Hasyirin\Address\Models\District;
-use Hasyirin\Address\Models\State;
 use Illuminate\Console\Command;
 use Illuminate\Console\View\Components\TwoColumnDetail;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use JsonException;
+use RuntimeException;
 
 class SeedCommand extends Command
 {
     public string $path {
-        get => is_dir((base_path('data'))) ? base_path('data') : __DIR__.'/../../data';
+        get => is_file(base_path('data/countries.json')) ? base_path('data') : __DIR__.'/../../data';
     }
 
     public $signature = 'address:seed';
@@ -30,140 +30,96 @@ class SeedCommand extends Command
     {
         $this->comment('Seeding countries...');
 
-        $countries = json_decode(file_get_contents("$this->path/countries.json"), true);
+        $countries = $this->read('countries.json');
 
-        $total = count($countries);
+        $total = $countries->count();
 
-        collect($countries)
-            ->each(function (array $country, int $index) use ($total) {
-                $country = config('address.models.country')::updateOrCreate(['code' => $country['code']], $country);
+        $countries->each(function (array $attributes, int $index) use ($total) {
+            $country = $this->updateOrCreate(config('address.models.country'), ['code' => $attributes['code']], $attributes);
 
-                $current = $index + 1;
+            $current = $index + 1;
 
-                new TwoColumnDetail($this->output)->render($country['name'], "$current/$total");
+            new TwoColumnDetail($this->output)->render($country['name'], "$current/$total");
 
-                $this->states($country);
-                $this->postOffices($country);
-                $this->districts($country);
-                $this->subdistricts($country);
-            });
+            $states = $this->seed('states', ["countries/{$attributes['code']}" => $country], config('address.models.state'), 'country_id', 'code');
+
+            $this->seed('post-offices', $states, config('address.models.post-office'), 'state_id', 'name');
+
+            $districts = $this->seed('districts', $states, config('address.models.district'), 'state_id', 'code');
+
+            $this->seed('subdistricts', $districts, config('address.models.subdistrict'), 'district_id', 'code');
+        });
 
         $this->comment('Done!');
     }
 
-    protected function states(Country $country): void
+    /**
+     * @param  array<string, Model>  $parents
+     * @return array<string, Model>
+     */
+    protected function seed(string $name, array $parents, string $model, string $foreignKey, string $key): array
     {
-        $file = "$this->path/countries/{$country->code}/states.json";
+        $files = collect($parents)
+            ->map(fn (Model $parent, string $directory) => $this->read("$directory/$name.json"))
+            ->filter(fn (Collection $rows) => $rows->isNotEmpty());
 
-        if (! file_exists($file)) {
-            return;
+        if ($files->isEmpty()) {
+            return [];
         }
 
-        if (($states = collect(json_decode(file_get_contents($file), true)))->isEmpty()) {
-            return;
-        }
+        $this->comment('Seeding '.str_replace('-', ' ', $name).'...');
 
-        $this->comment('Seeding states...');
-
-        $progress = $this->output->createProgressBar($states->count());
+        $progress = $this->output->createProgressBar($files->flatten(1)->count());
         $progress->start();
 
-        $states->each(function (array $state) use ($progress, $country) {
-            config('address.models.state')::updateOrCreate(['country_id' => $country->id, 'code' => $state['code']], $state);
-            $progress->advance();
-        });
+        $seeded = [];
+
+        foreach ($files as $directory => $rows) {
+            foreach ($rows as $attributes) {
+                $seeded["$directory/$name/{$attributes[$key]}"] = $this->updateOrCreate(
+                    $model,
+                    [$foreignKey => $parents[$directory]->getKey(), $key => $attributes[$key]],
+                    $attributes,
+                );
+
+                $progress->advance();
+            }
+        }
 
         $progress->finish();
         $this->newLine();
+
+        return $seeded;
     }
 
-    protected function postOffices(Country $country): void
+    /**
+     * @param  array<string, mixed>  $keys
+     * @param  array<string, mixed>  $attributes
+     */
+    protected function updateOrCreate(string $model, array $keys, array $attributes): Model
     {
-        $collection = $country->states
-            ->mapWithKeys(fn (State $state) => [$state->id => "$this->path/countries/{$country->code}/states/{$state->code}/post-offices.json"])
-            ->filter(fn (string $file) => file_exists($file))
-            ->map(fn (string $file) => collect(json_decode(file_get_contents($file), true)))
-            ->filter(fn (Collection $collection) => $collection->isNotEmpty());
+        $query = $model::withTrashed();
 
-        if ($collection->isEmpty()) {
-            return;
-        }
-
-        $this->comment('Seeding post offices...');
-
-        $progress = $this->output->createProgressBar($collection->flatten(1)->count());
-        $progress->start();
-
-        $collection->each(function (Collection $postOffices, int $state) use ($progress) {
-            $state = config('address.models.state')::find($state);
-
-            return $postOffices->each(function (array $office) use ($progress, $state) {
-                config('address.models.post-office')::updateOrCreate(['state_id' => $state->id, 'name' => $office['name']], $office);
-                $progress->advance();
-            });
-        });
-
-        $progress->finish();
-        $this->newLine();
+        return $query
+            ->orderByRaw("case when {$query->getModel()->getDeletedAtColumn()} is null then 0 else 1 end")
+            ->updateOrCreate($keys, $attributes);
     }
 
-    protected function districts(Country $country): void
+    /**
+     * @return Collection<int, array<string, mixed>>
+     */
+    protected function read(string $file): Collection
     {
-        $collection = $country->states
-            ->mapWithKeys(fn (State $state) => [$state->id => "$this->path/countries/{$country->code}/states/{$state->code}/districts.json"])
-            ->filter(fn (string $file) => file_exists($file))
-            ->map(fn (string $file) => collect(json_decode(file_get_contents($file), true)))
-            ->filter(fn (Collection $collection) => $collection->isNotEmpty());
+        $path = "$this->path/$file";
 
-        if ($collection->isEmpty()) {
-            return;
+        if (! is_file($path) || trim($json = file_get_contents($path)) === '') {
+            return collect();
         }
 
-        $this->comment('Seeding districts...');
-
-        $progress = $this->output->createProgressBar($collection->flatten(1)->count());
-        $progress->start();
-
-        $collection->each(function (Collection $districts, int $state) use ($progress) {
-            $state = config('address.models.state')::find($state);
-
-            return $districts->each(function (array $district) use ($progress, $state) {
-                config('address.models.district')::updateOrCreate(['state_id' => $state->id, 'code' => $district['code']], $district);
-                $progress->advance();
-            });
-        });
-
-        $progress->finish();
-        $this->newLine();
-    }
-
-    protected function subdistricts(Country $country): void
-    {
-        $collection = $country->districts
-            ->mapWithKeys(fn (District $district) => [$district->id => "$this->path/countries/{$country->code}/states/{$district->state->code}/districts/{$district->code}/subdistricts.json"])
-            ->filter(fn (string $file) => file_exists($file))
-            ->map(fn (string $file) => collect(json_decode(file_get_contents($file), true)))
-            ->filter(fn (Collection $collection) => $collection->isNotEmpty());
-
-        if ($collection->isEmpty()) {
-            return;
+        try {
+            return collect(json_decode($json, true, flags: JSON_THROW_ON_ERROR));
+        } catch (JsonException $e) {
+            throw new RuntimeException("Invalid JSON in [$path]: {$e->getMessage()}", previous: $e);
         }
-
-        $this->comment('Seeding subdistricts...');
-
-        $progress = $this->output->createProgressBar($collection->flatten(1)->count());
-        $progress->start();
-
-        $collection->each(function (Collection $subdistricts, int $district) use ($progress) {
-            $district = config('address.models.district')::find($district);
-
-            return $subdistricts->each(function (array $subdistrict) use ($progress, $district) {
-                config('address.models.subdistrict')::updateOrCreate(['district_id' => $district->id, 'code' => $subdistrict['code']], $subdistrict);
-                $progress->advance();
-            });
-        });
-
-        $progress->finish();
-        $this->newLine();
     }
 }

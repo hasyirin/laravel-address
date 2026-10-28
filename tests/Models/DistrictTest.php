@@ -4,6 +4,7 @@ use Hasyirin\Address\Models\Country;
 use Hasyirin\Address\Models\District;
 use Hasyirin\Address\Models\State;
 use Hasyirin\Address\Models\Subdistrict;
+use Hasyirin\Address\Tests\Fixtures\Area;
 use Illuminate\Support\Facades\DB;
 
 beforeEach(function () {
@@ -38,6 +39,15 @@ it('has many subdistricts', function () {
     expect($district->subdistricts)->toHaveCount(2);
 });
 
+it('resolves its relations when the district model has another class name', function () {
+    config(['address.models.district' => Area::class]);
+
+    $area = Area::create(['state_id' => $this->state->id, 'code' => '01', 'name' => 'Petaling']);
+    Subdistrict::create(['district_id' => $area->id, 'code' => '01', 'name' => 'Mukim A']);
+
+    expect($area->subdistricts)->toHaveCount(1);
+});
+
 it('returns the local district via static method', function () {
     config([
         'address.locality.country' => 'MYS',
@@ -50,6 +60,18 @@ it('returns the local district via static method', function () {
 
     expect(District::local())->toBeInstanceOf(District::class)
         ->id->toBe($local->id);
+});
+
+it('applies the local scope through the country districts relation', function () {
+    config([
+        'address.locality.country' => 'MYS',
+        'address.locality.state' => '10',
+        'address.locality.district' => '02',
+    ]);
+
+    $klang = District::create(['state_id' => $this->state->id, 'code' => '02', 'name' => 'Klang']);
+
+    expect($this->country->districts()->local()->first()?->id)->toBe($klang->id);
 });
 
 it('returns null when locality district config is unset', function () {

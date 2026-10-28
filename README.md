@@ -12,7 +12,7 @@ Comes with built-in geographical data for Malaysia and a seeder command to popul
 ## Requirements
 
 - PHP 8.4+
-- Laravel 12 or 13
+- Laravel 12.9+ or 13
 
 ## Installation
 
@@ -25,14 +25,14 @@ composer require hasyirin/laravel-address
 Publish and run the migrations:
 
 ```bash
-php artisan vendor:publish --tag="laravel-address-migrations"
+php artisan vendor:publish --tag="address-migrations"
 php artisan migrate
 ```
 
 Optionally publish the config file:
 
 ```bash
-php artisan vendor:publish --tag="laravel-address-config"
+php artisan vendor:publish --tag="address-config"
 ```
 
 ## Seeding Geographical Data
@@ -43,7 +43,17 @@ Seed countries, states, districts, subdistricts, and post offices:
 php artisan address:seed
 ```
 
-The command loads data from the package's `data/` directory. To use your own data, place JSON files in your application's `base_path('data')` directory following the same structure.
+The command matches existing rows by code (post offices by name), so you can run it again to apply data updates. Soft-deleted rows are updated but stay deleted. It follows the files down from `countries.json` and reads each level only for the parents listed in the level above.
+
+The bundled subdistrict data is partial: it covers Negeri Sembilan and the Kemaman district of Terengganu.
+
+To use your own data, publish the bundled files and edit them:
+
+```bash
+php artisan vendor:publish --tag="address-data"
+```
+
+The command reads from `base_path('data')` when that directory contains `countries.json`. Otherwise, it uses the package's bundled data.
 
 ## Usage
 
@@ -63,9 +73,10 @@ class User extends Model implements Addressable
 
 ### Creating Addresses
 
+The `address()` and `getAddress()` relations set `type` for you when you call `create()`, `make()`, or `save()` on them (`forceCreate()` needs Laravel 13.35 or later):
+
 ```php
 $user->address()->create([
-    'type' => 'primary',
     'line_1' => '123 Main Street',
     'line_2' => 'Suite 4B',
     'line_3' => 'Taman Example',
@@ -76,6 +87,11 @@ $user->address()->create([
     'latitude' => 3.1390,
     'longitude' => 101.6869,
     'properties' => ['notes' => 'Front gate access'],
+]);
+
+$user->getAddress('billing')->create([
+    'line_1' => '456 Side Street',
+    'postcode' => '50000',
 ]);
 ```
 
@@ -105,7 +121,7 @@ $user->address;
 $user->addresses;
 
 // Address by type
-$user->getAddress('billing');
+$user->getAddress('billing')->first();
 ```
 
 ### Querying by Type
@@ -147,9 +163,11 @@ $address->render(inline: true);
 $address->render(state: false, country: false, capitalize: true, margin: 1);
 ```
 
+The block output is HTML with every value escaped, so you can output it in Blade with `{!! $address->render() !!}`. The inline output and `formatted()` are plain text; output them with `{{ }}`.
+
 ### Copying an Address
 
-Create an unsaved copy of an address (without the polymorphic relationship or type):
+Create an unsaved copy of an address (without the polymorphic relationship, type, or `deleted_at`):
 
 ```php
 $copy = $address->copy();
@@ -186,7 +204,7 @@ Compose with the `local()` query scope:
 District::query()->local()->where(...)->get();
 ```
 
-The result is memoized per request via `cache()->memo()`. `saved` and `deleted` listeners on each model cascade-clear caches down the chain (`Country` save clears `State` and `District` caches too). For manual invalidation:
+The result is cached forever in your default cache store and memoized per request via `cache()->memo()`. The cached entry records the locality codes it was resolved for, so a config change takes effect immediately. A miss is never cached. `saved` and `deleted` listeners on each model cascade-clear caches down the chain (`Country` save clears `State` and `District` caches too). Writes that skip model events, such as query builder updates, `upsert()`, or `saveQuietly()`, do not clear the cache. For manual invalidation:
 
 ```php
 Country::clearLocalCache();
@@ -239,7 +257,7 @@ Country
       └── Post Office (with postcodes)
 ```
 
-Each `Address` belongs to a `Country`, `State`, and optionally a `PostOffice`, and is polymorphically attached to any model via the `addressable` morph relationship.
+Each `Address` optionally belongs to a `Country`, `State`, and `PostOffice`, and is polymorphically attached to any model via the `addressable` morph relationship.
 
 ## Models
 
@@ -284,6 +302,10 @@ composer test
 ## Changelog
 
 Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
+
+## Security Vulnerabilities
+
+Please review [our security policy](../../security/policy) on how to report security vulnerabilities.
 
 ## Credits
 

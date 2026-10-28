@@ -5,6 +5,7 @@ use Hasyirin\Address\Models\Country;
 use Hasyirin\Address\Models\District;
 use Hasyirin\Address\Models\PostOffice;
 use Hasyirin\Address\Models\State;
+use Hasyirin\Address\Tests\Fixtures\Nation;
 use Hasyirin\Address\Tests\Fixtures\User;
 use Illuminate\Support\Facades\DB;
 
@@ -29,6 +30,21 @@ it('returns the local country via static method', function () {
 
     expect(Country::local())->toBeInstanceOf(Country::class)
         ->id->toBe($local->id);
+});
+
+it('applies the local scope to a query that joins states', function () {
+    config(['address.locality.country' => 'MYS']);
+
+    $mys = Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
+    State::create(['country_id' => $mys->id, 'code' => '10', 'name' => 'Selangor']);
+
+    $country = Country::query()
+        ->select('countries.*')
+        ->join('states', 'states.country_id', '=', 'countries.id')
+        ->local()
+        ->first();
+
+    expect($country?->id)->toBe($mys->id);
 });
 
 it('returns null when locality config is unset', function () {
@@ -70,6 +86,7 @@ it('caches local() across requests as a serialization-safe snapshot', function (
     // later request. It must persist the raw attributes instead, then rehydrate.
     config([
         'cache.stores.persistent' => ['driver' => 'array', 'serialize' => true],
+        'cache.serializable_classes' => false,
         'cache.default' => 'persistent',
         'address.locality.country' => 'MYS',
     ]);
@@ -80,9 +97,96 @@ it('caches local() across requests as a serialization-safe snapshot', function (
 
     // Persisted for later requests, but as a plain attributes array — never a
     // serialized model (which would come back as __PHP_Incomplete_Class).
-    $cached = cache()->store('persistent')->get('address.locality.'.Country::class);
-    expect($cached)->toBeArray()
-        ->and($cached['code'])->toBe('MYS');
+    app()->forgetScopedInstances();
+    DB::enableQueryLog();
+
+    expect(Country::local())->toBeInstanceOf(Country::class)
+        ->code->toBe('MYS')
+        ->and(DB::getQueryLog())->toBe([]);
+});
+
+it('follows a locality config change on a later request', function () {
+    config([
+        'cache.stores.persistent' => ['driver' => 'array', 'serialize' => true],
+        'cache.default' => 'persistent',
+        'address.locality.country' => 'MYS',
+    ]);
+    Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
+    Country::create(['code' => 'SGP', 'name' => 'Singapore']);
+
+    expect(Country::local()?->code)->toBe('MYS');
+
+    config(['address.locality.country' => 'SGP']);
+    app()->forgetScopedInstances();
+
+    expect(Country::local()?->code)->toBe('SGP');
+});
+
+it('ignores a local() value cached by an older version', function () {
+    config([
+        'cache.stores.persistent' => ['driver' => 'array', 'serialize' => true],
+        'cache.default' => 'persistent',
+        'address.locality.country' => 'MYS',
+    ]);
+    $mys = Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
+
+    cache()->forever('address.locality.'.Country::class, $mys->fresh());
+    app()->forgetScopedInstances();
+
+    expect($mys->is(Country::local()))->toBeTrue();
+});
+
+it('ignores local() attributes cached by an older version', function () {
+    config([
+        'cache.stores.persistent' => ['driver' => 'array', 'serialize' => true],
+        'cache.default' => 'persistent',
+        'address.locality.country' => 'MYS',
+    ]);
+    $mys = Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
+
+    cache()->forever('address.locality.'.Country::class, [...$mys->getAttributes(), 'name' => 'Old Name']);
+    app()->forgetScopedInstances();
+
+    expect(Country::local()?->name)->toBe('Malaysia');
+});
+
+it('clears the cached local() when the row changes under another locality config', function () {
+    config([
+        'cache.stores.persistent' => ['driver' => 'array', 'serialize' => true],
+        'cache.default' => 'persistent',
+        'address.locality.country' => 'MYS',
+    ]);
+    $mys = Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
+
+    expect(Country::local()?->name)->toBe('Malaysia');
+
+    config(['address.locality.country' => 'SGP']);
+    $mys->update(['name' => 'Malaysia Baru']);
+
+    config(['address.locality.country' => 'MYS']);
+    app()->forgetScopedInstances();
+
+    expect(Country::local()?->name)->toBe('Malaysia Baru');
+});
+
+it('finds a local country inserted without model events', function () {
+    config(['address.locality.country' => 'MYS']);
+
+    expect(Country::local())->toBeNull();
+
+    Country::withoutEvents(fn () => Country::create(['code' => 'MYS', 'name' => 'Malaysia']));
+
+    expect(Country::local()?->code)->toBe('MYS');
+});
+
+it('finds the local country when it is created after a miss', function () {
+    config(['address.locality.country' => 'MYS']);
+
+    expect(Country::local())->toBeNull();
+
+    $mys = Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
+
+    expect(Country::local()?->id)->toBe($mys->id);
 });
 
 it('returns a local() instance that Model::is() recognizes as the same record', function () {
@@ -138,6 +242,26 @@ it('has many addresses', function () {
     expect($country->addresses)->toHaveCount(1);
 });
 
+it('resolves its relations when the country model has another class name', function () {
+    config(['address.models.country' => Nation::class]);
+
+    $nation = Nation::create(['code' => 'MYS', 'name' => 'Malaysia']);
+    $state = State::create(['country_id' => $nation->id, 'code' => '10', 'name' => 'Selangor']);
+    District::create(['state_id' => $state->id, 'code' => '01', 'name' => 'Petaling']);
+    PostOffice::create(['state_id' => $state->id, 'name' => 'Shah Alam', 'postcodes' => ['40000']]);
+    Address::create([
+        'addressable_type' => User::class,
+        'addressable_id' => User::create(['name' => 'Test'])->id,
+        'country_id' => $nation->id,
+        'type' => 'primary',
+    ]);
+
+    expect($nation->states)->toHaveCount(1)
+        ->and($nation->districts)->toHaveCount(1)
+        ->and($nation->postOffices)->toHaveCount(1)
+        ->and($nation->addresses)->toHaveCount(1);
+});
+
 it('supports soft deletes', function () {
     $country = Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
     $country->delete();
@@ -149,11 +273,17 @@ it('supports soft deletes', function () {
 it('generates a unique code for every country the factory creates', function () {
     // countries.code carries a global unique constraint. The factory must never
     // draw a duplicate, otherwise batches collide intermittently (birthday paradox
-    // over Faker's fixed ~249-value ISO alpha-3 pool).
+    // over the factory's fixed code pool).
     $count = 100;
 
     Country::factory()->count($count)->create();
 
     expect(Country::count())->toBe($count)
         ->and(Country::pluck('code')->unique())->toHaveCount($count);
+});
+
+it('creates a country with the factory after seeding', function () {
+    $this->artisan('address:seed')->assertSuccessful();
+
+    expect(Country::factory()->create()->exists)->toBeTrue();
 });

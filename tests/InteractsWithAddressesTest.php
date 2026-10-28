@@ -78,3 +78,9 @@ it('returns a default address with type when none exists', function () {
         ->and($address->exists)->toBeFalse()
         ->and($address->type)->toBe('shipping');
 });
+
+it('sets the type when creating through getAddress()', function () {
+    $address = $this->user->getAddress('billing')->create(['line_1' => 'No. 1']);
+
+    expect($address->fresh()->type)->toBe('billing');
+});

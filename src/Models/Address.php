@@ -17,16 +17,16 @@ use UnitEnum;
  * @property int $id
  * @property string $addressable_type
  * @property int $addressable_id
- * @property int $post_office_id
- * @property int $country_id
- * @property int $state_id
+ * @property ?int $post_office_id
+ * @property ?int $country_id
+ * @property ?int $state_id
  * @property string $type
- * @property string $line_1
- * @property string $line_2
- * @property string $line_3
- * @property string $postcode
- * @property float $latitude
- * @property float $longitude
+ * @property ?string $line_1
+ * @property ?string $line_2
+ * @property ?string $line_3
+ * @property ?string $postcode
+ * @property ?float $latitude
+ * @property ?float $longitude
  * @property array $properties
  * @property Model $addressable
  * @property ?Country $country
@@ -66,6 +66,8 @@ class Address extends Model
     protected function casts(): array
     {
         return [
+            'latitude' => 'float',
+            'longitude' => 'float',
             'properties' => 'array',
         ];
     }
@@ -80,9 +82,11 @@ class Address extends Model
         parent::boot();
 
         static::saving(function (self $address) {
-            $address->line_1 = str($address->line_1)->squish()->rtrim(',');
-            $address->line_2 = str($address->line_2)->squish()->rtrim(',');
-            $address->line_3 = str($address->line_3)->squish()->rtrim(',');
+            foreach (['line_1', 'line_2', 'line_3'] as $line) {
+                if ($address->isDirty($line) && $address->{$line} !== null) {
+                    $address->{$line} = (string) str($address->{$line})->squish()->rtrim(',');
+                }
+            }
         });
     }
 
@@ -126,7 +130,7 @@ class Address extends Model
             ->join(', ');
 
         if ($capitalize) {
-            $address = strtoupper($address);
+            $address = mb_strtoupper($address);
         }
 
         return $address;
@@ -143,20 +147,21 @@ class Address extends Model
             $country ? [$this->country?->name] : [],
         ])->map(fn (array $line) => collect($line)
             ->filter()
-            ->map(fn ($line) => str($line)->rtrim(',')->trim()->when($capitalize, fn ($line) => strtoupper($line)))
+            ->map(fn ($line) => (string) str($line)->rtrim(',')->trim()->when($capitalize, fn ($line) => $line->upper()))
             ->filter()
             ->join(', ')
         )->filter()
-            ->map(fn (string $line) => ($inline) ? "$line," : "<p class=\"mb-{$margin}\">$line,</p>")
+            ->map(fn (string $line) => ($inline) ? "$line," : "<p class=\"mb-{$margin}\">".e($line).',</p>')
             ->join("\n");
 
         return ($inline)
             ? str($address)->rtrim(',')
-            : rtrim($address, ',</p>').'</p>';
+            : (string) str($address)->replaceEnd(',</p>', '</p>');
     }
 
     public function copy(): self
     {
-        return $this->replicate(['addressable_type', 'addressable_id', 'type']);
+        return $this->replicate(['addressable_type', 'addressable_id', 'type', $this->getDeletedAtColumn()])
+            ->unsetRelation('addressable');
     }
 }
