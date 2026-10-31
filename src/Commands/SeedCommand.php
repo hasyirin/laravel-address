@@ -39,7 +39,7 @@ class SeedCommand extends Command
             $this->seed($this->rows($districts, 'subdistricts', 'code'), config('address.models.subdistrict'), 'district_id', 'code', ['name'], hasChildren: false);
         });
 
-        $country::clearLocalCache();
+        app('address.locality')->exchangeArray([]);
 
         return self::SUCCESS;
     }
@@ -164,7 +164,13 @@ class SeedCommand extends Command
         $rows = [];
 
         foreach ($postOffices as $path => [, $postOffice]) {
-            foreach ($postOffice['postcodes'] ?? [] as $code) {
+            $codes = $postOffice['postcodes'] ?? [];
+
+            if (! is_array($codes) || ! collect($codes)->every($this->isKey(...))) {
+                throw new RuntimeException("Invalid [postcodes] in [$path]");
+            }
+
+            foreach ($codes as $code) {
                 $rows["$path/postcodes/$code"] = [$ids[$path], ['code' => $code]];
             }
         }
@@ -189,10 +195,15 @@ class SeedCommand extends Command
             throw new RuntimeException("Invalid JSON in [$path]: {$e->getMessage()}", previous: $e);
         }
 
-        return $rows->each(function (array $row) use ($key, $path) {
-            if (blank($row[$key] ?? null)) {
+        return $rows->each(function (mixed $row) use ($key, $path) {
+            if (! $this->isKey($row[$key] ?? null)) {
                 throw new RuntimeException("Missing [$key] in [$path]");
             }
         });
+    }
+
+    protected function isKey(mixed $value): bool
+    {
+        return (is_string($value) || is_int($value)) && ! blank($value);
     }
 }

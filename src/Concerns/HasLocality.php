@@ -28,7 +28,8 @@ trait HasLocality
         };
 
         static::saving($clear);
-        static::saved($clearAfterWrite);
+        static::created($clearAfterWrite);
+        static::updated($clearAfterWrite);
         static::deleting($clear);
         static::deleted($clearAfterWrite);
     }
@@ -92,8 +93,10 @@ trait HasLocality
     {
         return json_encode([
             static::localityCodes(),
+            $connection->getName(),
             $connection->getDriverName(),
             $connection->getConfig('host'),
+            $connection->getConfig('unix_socket'),
             $connection->getConfig('port'),
             $connection->getDatabaseName(),
             $connection->getTablePrefix(),

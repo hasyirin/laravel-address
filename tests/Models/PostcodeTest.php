@@ -59,3 +59,15 @@ it('works with the exists validation rule', function () {
     expect(Validator::make(['postcode' => '40000'], ['postcode' => $rule])->passes())->toBeTrue()
         ->and(Validator::make(['postcode' => '40100'], ['postcode' => $rule])->passes())->toBeFalse();
 });
+
+it('needs its own exists rule to reject a trashed post office', function () {
+    $this->postOffice->postcodes()->create(['code' => '40000']);
+    $this->postOffice->delete();
+    $postcode = Rule::exists(config('address.models.postcode'), 'code')
+        ->where('post_office_id', $this->postOffice->id)
+        ->withoutTrashed();
+    $postOffice = Rule::exists(config('address.models.post-office'), 'id')->withoutTrashed();
+
+    expect(Validator::make(['postcode' => '40000'], ['postcode' => $postcode])->passes())->toBeTrue()
+        ->and(Validator::make(['post_office_id' => $this->postOffice->id], ['post_office_id' => $postOffice])->passes())->toBeFalse();
+});

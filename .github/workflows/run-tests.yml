@@ -88,7 +88,7 @@ jobs:
             image: postgres:17
             port: 5432
             username: postgres
-            health: pg_isready
+            health: pg_isready -h 127.0.0.1 -U postgres
 
     name: P8.5 - L13.* - prefer-stable - ${{ matrix.database }}
 

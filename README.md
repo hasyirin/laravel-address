@@ -45,7 +45,7 @@ php artisan address:seed
 
 The command runs in one transaction, so a failure writes nothing. It compares each level with the database and writes only new or changed rows, so you can run it again to apply data updates, and a re-seed of unchanged data writes nothing. It follows the files down from `countries.json` and reads each level only for the parents listed in the level above.
 
-Rows match on code. Post offices match by name within a state. Name matching is exact on PostgreSQL and SQLite, and ignores case on MySQL and MariaDB.
+Rows match on code. Post offices match by name within a state. Matching is exact on PostgreSQL and SQLite, and ignores case on MySQL and MariaDB.
 
 Soft-deleted rows are updated and stay deleted. The unique index also covers soft-deleted rows, so an app restores a trashed post office instead of creating a new one with the same name. The command never deletes rows, so a row that leaves the data stays in the database.
 
@@ -215,9 +215,9 @@ Compose with the `local()` query scope:
 District::query()->local()->where(...)->get();
 ```
 
-`local()` keeps its result for the current request or queue job, and Laravel discards it after each one. The result is kept per configured codes and per database, so a config change or a tenant switch resolves the row again. When the code of a level or of a parent level is `null`, `local()` returns `null` without a query. A configured code with no row is never kept, so it runs one query per call.
+`local()` keeps its result for the current request or queue job, and Laravel discards it after each one. The result is kept per configured codes, connection, and database, so a config change or a tenant switch resolves the row again. When the code of a level or of a parent level is `null`, `local()` returns `null` without a query. A configured code with no row is never kept, so it runs one query per call.
 
-Any Eloquent save or delete of a `Country`, `State`, or `District` clears the kept results, and so does a rollback of a transaction that saved one. `address:seed` clears them too. Long-running processes, such as commands and daemons, keep a result until they save one of these models or call `clearLocalCache()`.
+Any Eloquent save, delete, `increment()`, or `decrement()` of a `Country`, `State`, or `District` clears the kept results, and so does a rollback of a transaction that saved one. `address:seed` clears them too. Long-running processes, such as commands and daemons, keep a result until they save one of these models or call `clearLocalCache()`.
 
 Writes that skip model events, such as query builder updates, `upsert()`, or `saveQuietly()`, do not clear the kept results. If the same request reads `local()` after such a write, clear them first:
 
@@ -246,6 +246,8 @@ Rule::exists(config('address.models.postcode'), 'code')
     ->where('post_office_id', $postOfficeId)
     ->withoutTrashed();
 ```
+
+This rule checks the postcode only. A postcode stays active when its post office is soft-deleted, so validate `post_office_id` with its own rule, for example `Rule::exists(config('address.models.post-office'), 'id')->withoutTrashed()`.
 
 `Postcode::code` is squished and uppercased when it is set. `latitude` and `longitude` are empty until your app fills them. Geocoding an address stays your app's job; store the result in `latitude` and `longitude` on the `Address`.
 
@@ -313,15 +315,15 @@ Address::whereHas('postOffice', fn ($query) => $query->withoutTrashed())->get();
 
 ## Models
 
-| Model         | Key Fields                                                                                                           |
-|---------------|----------------------------------------------------------------------------------------------------------------------|
-| `Country`     | `code` (ISO 3166-1 alpha-3), `alpha_2`, `name`                                                                       |
-| `State`       | `code`, `name`, belongs to `Country`                                                                                 |
-| `District`    | `code`, `name`, belongs to `State`                                                                                   |
-| `Subdistrict` | `code`, `name`, belongs to `District`                                                                                |
-| `PostOffice`  | `name`, belongs to `State`, has many `Postcode`                                                                      |
-| `Postcode`    | `code`, `latitude`, `longitude`, belongs to `PostOffice`                                                             |
-| `Address`     | `type`, `line_1`-`line_3`, `postcode`, `district_id`, `subdistrict_id`, `latitude`, `longitude`, `properties` (JSON) |
+| Model         | Key Fields                                                                                                                                                  |
+|---------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `Country`     | `code` (ISO 3166-1 alpha-3), `alpha_2`, `name`                                                                                                              |
+| `State`       | `code`, `name`, belongs to `Country`                                                                                                                        |
+| `District`    | `code`, `name`, belongs to `State`                                                                                                                          |
+| `Subdistrict` | `code`, `name`, belongs to `District`                                                                                                                       |
+| `PostOffice`  | `name`, belongs to `State`, has many `Postcode`                                                                                                             |
+| `Postcode`    | `code`, `latitude`, `longitude`, belongs to `PostOffice`                                                                                                    |
+| `Address`     | `type`, `line_1`-`line_3`, `postcode`, `latitude`, `longitude`, `properties` (JSON), belongs to `Country`, `State`, `District`, `Subdistrict`, `PostOffice` |
 
 All models use soft deletes.
 

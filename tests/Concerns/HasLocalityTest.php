@@ -4,7 +4,9 @@ use Hasyirin\Address\Models\Country;
 use Hasyirin\Address\Models\District;
 use Hasyirin\Address\Models\State;
 use Hasyirin\Address\Tests\Fixtures\Nation;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 it('shares the memo with a configured subclass', function () {
     config(['address.models.country' => Nation::class, 'address.locality.country' => 'MYS']);
@@ -71,7 +73,44 @@ it('keeps the memo apart per database', function (array $tenant) {
 })->with([
     'another table prefix' => [['prefix' => 'tenant_']],
     'another host' => [['host' => 'shard-2']],
+    'another connection name' => [[]],
 ]);
+
+it('keeps the memo apart when a connection moves to another socket', function () {
+    config(['address.locality.country' => 'MYS', 'database.default' => 'tenant']);
+
+    foreach (['first', 'second'] as $name) {
+        config(['database.connections.tenant' => ['driver' => 'sqlite', 'database' => ':memory:', 'unix_socket' => "/tmp/$name.sock"]]);
+        DB::purge('tenant');
+        (include __DIR__.'/../../database/migrations/create_countries_table.php.stub')->up();
+        DB::table('countries')->insert(['code' => 'MYS', 'name' => $name, 'created_at' => now(), 'updated_at' => now()]);
+
+        expect(Country::local()?->name)->toBe($name);
+    }
+});
+
+it('resolves the row again when the database name changes', function () {
+    config(['address.locality.country' => 'MYS']);
+    Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
+    Country::local();
+    DB::connection()->setDatabaseName('tenant');
+    DB::enableQueryLog();
+
+    Country::local();
+
+    expect(DB::getQueryLog())->toHaveCount(1);
+});
+
+it('clears the memo after an increment', function () {
+    Schema::table('countries', fn (Blueprint $table) => $table->integer('hits')->default(0));
+    config(['address.locality.country' => 'MYS']);
+    $mys = Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
+    Country::local();
+
+    $mys->increment('hits');
+
+    expect(Country::local()?->hits)->toEqual(1);
+});
 
 it('does not keep a row read during the save', function () {
     config(['address.locality.country' => 'MYS']);

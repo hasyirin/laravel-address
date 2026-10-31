@@ -69,7 +69,7 @@ it('memoizes local() within a request and invalidates on save', function () {
 
     expect(Country::local()?->code)->toBe('MYS');
 
-    // Bypass model events so the saved listener does not fire — cache stays warm.
+    // Bypass model events so no listener fires — cache stays warm.
     DB::table('countries')->where('id', $mys->id)->update(['code' => 'XXX']);
 
     expect(Country::local()?->code)->toBe('MYS');
@@ -80,11 +80,7 @@ it('memoizes local() within a request and invalidates on save', function () {
 });
 
 it('follows a locality config change on a later request', function () {
-    config([
-        'cache.stores.persistent' => ['driver' => 'array', 'serialize' => true],
-        'cache.default' => 'persistent',
-        'address.locality.country' => 'MYS',
-    ]);
+    config(['address.locality.country' => 'MYS']);
     Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
     Country::create(['code' => 'SGP', 'name' => 'Singapore']);
 
@@ -96,12 +92,8 @@ it('follows a locality config change on a later request', function () {
     expect(Country::local()?->code)->toBe('SGP');
 });
 
-it('clears the cached local() when the row changes under another locality config', function () {
-    config([
-        'cache.stores.persistent' => ['driver' => 'array', 'serialize' => true],
-        'cache.default' => 'persistent',
-        'address.locality.country' => 'MYS',
-    ]);
+it('clears the memo when the row changes under another locality config', function () {
+    config(['address.locality.country' => 'MYS']);
     $mys = Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
 
     expect(Country::local()?->name)->toBe('Malaysia');
@@ -110,7 +102,6 @@ it('clears the cached local() when the row changes under another locality config
     $mys->update(['name' => 'Malaysia Baru']);
 
     config(['address.locality.country' => 'MYS']);
-    app()->forgetScopedInstances();
 
     expect(Country::local()?->name)->toBe('Malaysia Baru');
 });

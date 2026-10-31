@@ -75,3 +75,9 @@ it('sets the type when force creating', function () {
 
     expect($address->fresh()->type)->toBe('billing');
 });
+
+it('sets the type when saving a model through the relation', function () {
+    $address = $this->user->address('billing')->save(new Address(['line_1' => 'No. 1']));
+
+    expect($address->fresh()->type)->toBe('billing');
+});

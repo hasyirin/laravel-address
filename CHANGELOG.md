@@ -32,13 +32,14 @@ All notable changes to `laravel-address` will be documented in this file.
 
 - Saves of `Country`, `State`, and `District` no longer use the cache store, so a cache outage no longer breaks them
 - `local()` no longer uses a shared cache, so a rollback or another request cannot leave a stale row. A `local()` call during a save no longer keeps the old row
-- A subclass and its base model now share one `local()` result, and two tenant databases no longer do
+- A subclass and its base model now share one `local()` result, and two tenant databases or connections no longer do
+- `increment()` and `decrement()` on `Country`, `State`, and `District` now clear the `local()` result
 - `ofType()` now qualifies its column, so it works in joins, and binds enum values as strings, so an int-backed enum no longer matches every type on MySQL
 - `formatted()` no longer keeps parts that are empty after cleaning
 - A line or postcode that is blank after normalizing is stored as `null`, `postcode` is squished and uppercased, and a line no longer keeps a space before a stripped comma: `"No. 1 ,"` is stored as `"No. 1"`
 - `address:seed` runs in one transaction, so a failure writes nothing. It compares each level with the database first, so a re-seed of unchanged data takes 6 reads and writes nothing, `updated_at` keeps its meaning, and no ids are used up. A first seed takes 33 queries instead of about 2,000
-- `address:seed` and the `Address` relations work for configured models without `SoftDeletes`
-- `address:seed` keeps columns that an app adds, accepts rows without optional keys, keeps the last of two rows with the same key, names the file when a row has no key, and names the row when the database merges two keys
+- `address:seed` and the `Address` relations work for configured models without `SoftDeletes`, and `address:seed` works for a country model without `HasLocality`
+- `address:seed` keeps columns that an app adds, accepts rows without optional keys, and keeps the last of two rows with the same key. It names the file when a row is not valid or has no key, the post office when its postcodes are not valid, and the row when the database merges two keys
 - Locality codes written as integers now match the same rows on every database
 - `local()` runs no query when the code of its level or of a parent level is `null`
 

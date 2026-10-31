@@ -7,6 +7,7 @@ use Hasyirin\Address\Models\PostOffice;
 use Hasyirin\Address\Models\State;
 use Hasyirin\Address\Models\Subdistrict;
 use Hasyirin\Address\Tests\Fixtures\ActiveCountry;
+use Hasyirin\Address\Tests\Fixtures\PlainCountry;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\Schema\Blueprint;
@@ -399,3 +400,52 @@ it('names the row when the database merges two keys', function () {
     expect(fn () => $this->artisan('address:seed')->run())
         ->toThrow(RuntimeException::class, 'countries/XXA/states/01/post-offices/Town A');
 })->skip(fn () => ! in_array(DB::getDriverName(), ['mysql', 'mariadb']), 'Only MySQL and MariaDB merge keys that differ only in case.');
+
+it('names the file when a row is not valid', function (string $json) {
+    putAppData(['countries.json' => $json]);
+
+    expect(fn () => $this->artisan('address:seed')->run())
+        ->toThrow(RuntimeException::class, 'Missing [code] in ['.database_path('data/address/countries.json').']');
+})->with([
+    'a list of strings' => ['["XXA"]'],
+    'one object' => ['{"code": "XXA"}'],
+    'a key that is a list' => ['[{"code": ["XXA"]}]'],
+]);
+
+it('names the post office when its postcodes are not valid', function (mixed $postcodes) {
+    putAppData([
+        'countries.json' => json_encode([['code' => 'XXA', 'name' => 'Testland', 'alpha_2' => 'XA']]),
+        'countries/XXA/states.json' => json_encode([['code' => '01', 'name' => 'First']]),
+        'countries/XXA/states/01/post-offices.json' => json_encode([['name' => 'Town A', 'postcodes' => $postcodes]]),
+    ]);
+
+    expect(fn () => $this->artisan('address:seed')->run())
+        ->toThrow(RuntimeException::class, 'Invalid [postcodes] in [countries/XXA/states/01/post-offices/Town A]');
+})->with([
+    'a blank code' => [['', '99999']],
+    'a null code' => [[null]],
+    'a nested list' => [[['99999']]],
+    'a string instead of a list' => ['99999'],
+]);
+
+it('seeds with a country model that does not use HasLocality', function () {
+    config(['address.models.country' => PlainCountry::class]);
+
+    $this->artisan('address:seed')->assertSuccessful();
+
+    expect(PlainCountry::query()->count())->toBe(249);
+});
+
+it('updates a soft-deleted row and keeps it deleted', function () {
+    putAppData(['countries.json' => json_encode([['code' => 'XXA', 'name' => 'Testland', 'alpha_2' => 'XA']])]);
+    $this->artisan('address:seed')->assertSuccessful();
+    Country::query()->where('code', 'XXA')->sole()->delete();
+    putAppData(['countries.json' => json_encode([['code' => 'XXA', 'name' => 'New Testland', 'alpha_2' => 'XA']])]);
+
+    $this->artisan('address:seed')->assertSuccessful();
+
+    $country = Country::withTrashed()->where('code', 'XXA')->sole();
+
+    expect($country->name)->toBe('New Testland')
+        ->and($country->trashed())->toBeTrue();
+});
