@@ -3,8 +3,8 @@
 namespace Hasyirin\Address\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Console\View\Components\TwoColumnDetail;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use JsonException;
 use RuntimeException;
@@ -12,7 +12,7 @@ use RuntimeException;
 class SeedCommand extends Command
 {
     public string $path {
-        get => is_file(base_path('data/countries.json')) ? base_path('data') : __DIR__.'/../../data';
+        get => is_file(database_path('data/address/countries.json')) ? database_path('data/address') : __DIR__.'/../../data';
     }
 
     public $signature = 'address:seed';
@@ -21,94 +21,132 @@ class SeedCommand extends Command
 
     public function handle(): int
     {
-        $this->countries();
+        $country = config('address.models.country');
+
+        new $country()->getConnection()->transaction(function () use ($country) {
+            $countries = $this->seed($this->rows(['' => null], 'countries', 'code'), $country, null, 'code', ['name', 'alpha_2']);
+
+            $states = $this->seed($this->rows($countries, 'states', 'code'), config('address.models.state'), 'country_id', 'code', ['name']);
+
+            $this->seed($this->rows($states, 'post-offices', 'name'), config('address.models.post-office'), 'state_id', 'name', ['postcodes'], hasChildren: false);
+
+            $districts = $this->seed($this->rows($states, 'districts', 'code'), config('address.models.district'), 'state_id', 'code', ['name']);
+
+            $this->seed($this->rows($districts, 'subdistricts', 'code'), config('address.models.subdistrict'), 'district_id', 'code', ['name'], hasChildren: false);
+        });
+
+        $country::clearLocalCache();
 
         return self::SUCCESS;
     }
 
-    protected function countries(): void
-    {
-        $this->comment('Seeding countries...');
-
-        $countries = $this->read('countries.json');
-
-        $total = $countries->count();
-
-        $countries->each(function (array $attributes, int $index) use ($total) {
-            $country = $this->updateOrCreate(config('address.models.country'), ['code' => $attributes['code']], $attributes);
-
-            $current = $index + 1;
-
-            new TwoColumnDetail($this->output)->render($country['name'], "$current/$total");
-
-            $states = $this->seed('states', ["countries/{$attributes['code']}" => $country], config('address.models.state'), 'country_id', 'code');
-
-            $this->seed('post-offices', $states, config('address.models.post-office'), 'state_id', 'name');
-
-            $districts = $this->seed('districts', $states, config('address.models.district'), 'state_id', 'code');
-
-            $this->seed('subdistricts', $districts, config('address.models.subdistrict'), 'district_id', 'code');
-        });
-
-        $this->comment('Done!');
-    }
-
     /**
-     * @param  array<string, Model>  $parents
-     * @return array<string, Model>
+     * @param  array<string, array{int|null, array<string, mixed>}>  $rows
+     * @param  array<int, string>  $columns
+     * @return array<string, int>
      */
-    protected function seed(string $name, array $parents, string $model, string $foreignKey, string $key): array
+    protected function seed(array $rows, string $model, ?string $foreignKey, string $key, array $columns, bool $hasChildren = true): array
     {
-        $files = collect($parents)
-            ->map(fn (Model $parent, string $directory) => $this->read("$directory/$name.json"))
-            ->filter(fn (Collection $rows) => $rows->isNotEmpty());
-
-        if ($files->isEmpty()) {
+        if ($rows === []) {
             return [];
         }
 
-        $this->comment('Seeding '.str_replace('-', ' ', $name).'...');
+        $instance = new $model;
+        $uniqueBy = array_values(array_filter([$foreignKey, $key]));
 
-        $progress = $this->output->createProgressBar($files->flatten(1)->count());
-        $progress->start();
+        $attributes = $data = $uniqueKeys = [];
 
-        $seeded = [];
+        foreach ($rows as $path => [$parentId, $row]) {
+            $values = [...array_fill_keys($columns, null), ...Arr::only($row, $columns)];
 
-        foreach ($files as $directory => $rows) {
-            foreach ($rows as $attributes) {
-                $seeded["$directory/$name/{$attributes[$key]}"] = $this->updateOrCreate(
-                    $model,
-                    [$foreignKey => $parents[$directory]->getKey(), $key => $attributes[$key]],
-                    $attributes,
-                );
+            $built = $instance->newInstance()
+                ->forceFill([...($foreignKey === null ? [] : [$foreignKey => $parentId]), $key => $row[$key], ...$values])
+                ->getAttributes();
 
-                $progress->advance();
+            $unique = $this->uniqueKey($built, $uniqueBy);
+
+            $uniqueKeys[$path] = $unique;
+            $attributes[$unique] = $built;
+            $data[$unique] = $values;
+        }
+
+        $read = fn () => $this->existing($model, $foreignKey ?? $key, array_column($attributes, $foreignKey ?? $key))
+            ->keyBy(fn (Model $existing) => $this->uniqueKey($existing->getAttributes(), $uniqueBy));
+
+        $existing = $read();
+
+        $writes = [];
+        $inserts = false;
+
+        foreach ($attributes as $unique => $built) {
+            $current = $existing->get($unique);
+
+            $inserts = $inserts || $current === null;
+
+            if ($current === null || $current->forceFill($data[$unique])->isDirty()) {
+                $writes[] = $built;
             }
         }
 
-        $progress->finish();
-        $this->newLine();
+        // SQL Server allows 2,100 parameters per statement.
+        foreach (array_chunk($writes, 200) as $chunk) {
+            // MySQL and MariaDB also match a key that differs only in case, so the key is updated too.
+            $model::query()->withoutGlobalScopes()->upsert($chunk, $uniqueBy, [$key, ...$columns]);
+        }
 
-        return $seeded;
+        $this->components->twoColumnDetail($instance->getTable(), count($rows).' read, '.count($writes).' written');
+
+        if (! $hasChildren) {
+            return [];
+        }
+
+        if ($inserts) {
+            $existing = $read();
+        }
+
+        return array_map(fn (string $unique) => $existing->get($unique)->getKey(), $uniqueKeys);
     }
 
     /**
-     * @param  array<string, mixed>  $keys
      * @param  array<string, mixed>  $attributes
+     * @param  array<int, string>  $uniqueBy
      */
-    protected function updateOrCreate(string $model, array $keys, array $attributes): Model
+    protected function uniqueKey(array $attributes, array $uniqueBy): string
     {
-        $query = $model::withTrashed();
+        return implode("\0", array_map(fn (string $column) => $attributes[$column], $uniqueBy));
+    }
 
-        return $query
-            ->orderByRaw("case when {$query->getModel()->getDeletedAtColumn()} is null then 0 else 1 end")
-            ->updateOrCreate($keys, $attributes);
+    /**
+     * @param  array<int, mixed>  $values
+     * @return Collection<int, Model>
+     */
+    protected function existing(string $model, string $column, array $values): Collection
+    {
+        return collect(array_chunk(array_values(array_unique($values)), 1000))
+            ->flatMap(fn (array $chunk) => $model::query()->withoutGlobalScopes()->whereIn($column, $chunk)->get());
+    }
+
+    /**
+     * @param  array<string, int|null>  $parents
+     * @return array<string, array{int|null, array<string, mixed>}>
+     */
+    protected function rows(array $parents, string $name, string $key): array
+    {
+        $rows = [];
+
+        foreach ($parents as $path => $parentId) {
+            foreach ($this->read(ltrim("$path/$name.json", '/'), $key) as $row) {
+                $rows[ltrim("$path/$name/{$row[$key]}", '/')] = [$parentId, $row];
+            }
+        }
+
+        return $rows;
     }
 
     /**
      * @return Collection<int, array<string, mixed>>
      */
-    protected function read(string $file): Collection
+    protected function read(string $file, string $key): Collection
     {
         $path = "$this->path/$file";
 
@@ -117,9 +155,15 @@ class SeedCommand extends Command
         }
 
         try {
-            return collect(json_decode($json, true, flags: JSON_THROW_ON_ERROR));
+            $rows = collect(json_decode($json, true, flags: JSON_THROW_ON_ERROR));
         } catch (JsonException $e) {
             throw new RuntimeException("Invalid JSON in [$path]: {$e->getMessage()}", previous: $e);
         }
+
+        return $rows->each(function (array $row) use ($key, $path) {
+            if (blank($row[$key] ?? null)) {
+                throw new RuntimeException("Missing [$key] in [$path]");
+            }
+        });
     }
 }

@@ -5,23 +5,29 @@ use Hasyirin\Address\Models\District;
 use Hasyirin\Address\Models\PostOffice;
 use Hasyirin\Address\Models\State;
 use Hasyirin\Address\Models\Subdistrict;
+use Hasyirin\Address\Tests\Fixtures\ActiveCountry;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 function putAppData(array $files): void
 {
     foreach ($files as $file => $contents) {
-        File::ensureDirectoryExists(dirname(base_path("data/$file")));
-        File::put(base_path("data/$file"), $contents);
+        File::ensureDirectoryExists(dirname(database_path("data/address/$file")));
+        File::put(database_path("data/address/$file"), $contents);
     }
 }
 
 beforeEach(function () {
-    File::deleteDirectory(base_path('data'));
+    File::deleteDirectory(database_path('data/address'));
 });
 
 afterEach(function () {
-    File::deleteDirectory(base_path('data'));
+    File::deleteDirectory(database_path('data/address'));
 });
 
 it('runs the seed command successfully', function () {
@@ -96,18 +102,6 @@ it('does not duplicate a soft-deleted post office when seeding again', function 
     expect(PostOffice::withTrashed()->where('name', 'Bahau')->sole()->trashed())->toBeTrue();
 });
 
-it('updates the live post office when a soft-deleted duplicate exists', function () {
-    $this->artisan('address:seed')->assertSuccessful();
-
-    $trashed = PostOffice::where('name', 'Bahau')->sole();
-    $trashed->delete();
-    $live = PostOffice::create(['state_id' => $trashed->state_id, 'name' => 'Bahau', 'postcodes' => ['72100']]);
-
-    $this->artisan('address:seed')->assertSuccessful();
-
-    expect($live->fresh()->postcodes)->toBe(['72100', '72107', '72109']);
-});
-
 it('seeds on a connection with a table prefix', function () {
     config([
         'database.connections.prefixed' => ['driver' => 'sqlite', 'database' => ':memory:', 'prefix' => 'app_'],
@@ -144,7 +138,7 @@ it('seeds from the app data directory when it has countries.json', function () {
 });
 
 it('falls back to the package data when the app data directory has no countries.json', function () {
-    File::ensureDirectoryExists(base_path('data'));
+    File::ensureDirectoryExists(database_path('data/address'));
 
     $this->artisan('address:seed')->assertSuccessful();
 
@@ -155,7 +149,7 @@ it('reports the file that holds invalid json', function () {
     putAppData(['countries.json' => '[{"code": "XXA",']);
 
     expect(fn () => $this->artisan('address:seed')->run())
-        ->toThrow(RuntimeException::class, base_path('data/countries.json'));
+        ->toThrow(RuntimeException::class, database_path('data/address/countries.json'));
 });
 
 it('resolves the local country from locality config after seeding', function () {
@@ -167,4 +161,197 @@ it('resolves the local country from locality config after seeding', function () 
 
     expect($local)->not->toBeNull()
         ->and($local->code)->toBe('MYS');
+});
+
+it('seeds every level in 16 queries', function () {
+    DB::enableQueryLog();
+
+    $this->artisan('address:seed')->assertSuccessful();
+
+    expect(DB::getQueryLog())->toHaveCount(16);
+});
+
+it('reads 5 times and writes nothing when the data did not change', function () {
+    $this->artisan('address:seed')->assertSuccessful();
+    DB::enableQueryLog();
+
+    $this->artisan('address:seed')->assertSuccessful();
+
+    expect(collect(DB::getQueryLog())->pluck('query'))->toHaveCount(5)
+        ->each->toStartWith('select');
+});
+
+it('keeps updated_at when the data did not change', function () {
+    $this->artisan('address:seed')->assertSuccessful();
+    $before = DB::table('countries')->where('code', 'MYS')->value('updated_at');
+
+    $this->travel(1)->hours();
+    $this->artisan('address:seed')->assertSuccessful();
+
+    expect(DB::table('countries')->where('code', 'MYS')->value('updated_at'))->toBe($before);
+});
+
+it('writes only the row that changed', function () {
+    putAppData(['countries.json' => json_encode([['code' => 'XXA', 'name' => 'Testland', 'alpha_2' => 'XA'], ['code' => 'XXB', 'name' => 'Otherland', 'alpha_2' => 'XB']])]);
+    $this->artisan('address:seed')->assertSuccessful();
+    putAppData(['countries.json' => json_encode([['code' => 'XXA', 'name' => 'Testland', 'alpha_2' => 'XA'], ['code' => 'XXB', 'name' => 'New Otherland', 'alpha_2' => 'XB']])]);
+    DB::enableQueryLog();
+
+    $this->artisan('address:seed')->assertSuccessful();
+
+    expect(collect(DB::getQueryLog())->pluck('query')->reject(fn (string $sql) => str_starts_with($sql, 'select')))->toHaveCount(1)
+        ->and(Country::query()->where('code', 'XXB')->value('name'))->toBe('New Otherland');
+});
+
+it('uses no ids when the data did not change', function () {
+    $this->artisan('address:seed')->assertSuccessful();
+    $first = Country::factory()->create()->id;
+
+    $this->artisan('address:seed')->assertSuccessful();
+
+    expect(Country::factory()->create()->id)->toBe($first + 1);
+});
+
+it('writes nothing when a later file is invalid', function () {
+    putAppData([
+        'countries.json' => json_encode([['code' => 'XXA', 'name' => 'Testland', 'alpha_2' => 'XA']]),
+        'countries/XXA/states.json' => '[{"code": "01",',
+    ]);
+
+    expect(fn () => $this->artisan('address:seed')->run())->toThrow(RuntimeException::class)
+        ->and(Country::withTrashed()->count())->toBe(0);
+});
+
+it('does not use the cache store', function () {
+    config(['cache.default' => 'database']);
+
+    $this->artisan('address:seed')->assertSuccessful();
+
+    expect(Country::query()->count())->toBe(249);
+});
+
+it('ignores unknown keys in a data file', function () {
+    putAppData(['countries.json' => json_encode([['id' => 999, 'code' => 'XXA', 'name' => 'Testland', 'alpha_2' => 'XA', 'flag' => 'none']])]);
+
+    $this->artisan('address:seed')->assertSuccessful();
+
+    expect(Country::sole())->code->toBe('XXA')->id->not->toBe(999);
+});
+
+it('seeds through the configured model classes', function () {
+    Schema::table('countries', fn (Blueprint $table) => $table->boolean('is_active')->nullable());
+    config(['address.models.country' => ActiveCountry::class]);
+
+    $this->artisan('address:seed')->assertSuccessful();
+
+    expect(ActiveCountry::query()->where('code', 'MYS')->value('is_active'))->toBeTruthy();
+});
+
+it('has no post office names in one state that MySQL treats as equal', function () {
+    collect(glob(__DIR__.'/../../data/countries/*/states/*/post-offices.json'))
+        ->each(fn (string $file) => expect(collect(json_decode(file_get_contents($file), true))
+            ->map(fn (array $row) => rtrim(mb_strtolower(Str::ascii($row['name']))))
+            ->duplicates())->toBeEmpty());
+});
+
+it('clears a cached locality after seeding', function () {
+    config(['address.locality.country' => 'MYS', 'address.locality.state' => '05']);
+    $mys = Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
+    State::create(['country_id' => $mys->id, 'code' => '05', 'name' => 'Old Name']);
+
+    expect(State::local()?->name)->toBe('Old Name');
+
+    $this->artisan('address:seed')->assertSuccessful();
+
+    expect(State::local()?->name)->toBe('Negeri Sembilan');
+});
+
+it('keeps an app column when seeding again', function () {
+    Schema::table('countries', fn (Blueprint $table) => $table->boolean('is_active')->default(true));
+    config(['address.models.country' => ActiveCountry::class]);
+    $this->artisan('address:seed')->assertSuccessful();
+    ActiveCountry::query()->where('code', 'MYS')->update(['is_active' => false]);
+
+    $this->artisan('address:seed')->assertSuccessful();
+
+    expect(ActiveCountry::query()->where('code', 'MYS')->value('is_active'))->toBeFalsy();
+});
+
+it('seeds a row that leaves out an optional column', function () {
+    putAppData(['countries.json' => json_encode([
+        ['code' => 'XXA', 'name' => 'Testland', 'alpha_2' => 'XA'],
+        ['code' => 'XXB', 'name' => 'Otherland'],
+    ])]);
+
+    $this->artisan('address:seed')->assertSuccessful();
+
+    expect(Country::query()->where('code', 'XXB')->first())
+        ->name->toBe('Otherland')
+        ->alpha_2->toBeNull();
+});
+
+it('keeps the last of two rows with the same key', function () {
+    putAppData([
+        'countries.json' => json_encode([['code' => 'XXA', 'name' => 'Testland', 'alpha_2' => 'XA']]),
+        'countries/XXA/states.json' => json_encode([['code' => '01', 'name' => 'First'], ['code' => '01', 'name' => 'Second']]),
+    ]);
+
+    $this->artisan('address:seed')->assertSuccessful();
+
+    expect(State::sole()->name)->toBe('Second');
+});
+
+it('binds at most 2,100 parameters per query', function () {
+    $bindings = [];
+    DB::listen(function (QueryExecuted $query) use (&$bindings) {
+        $bindings[] = count($query->bindings);
+    });
+
+    $this->artisan('address:seed')->assertSuccessful();
+
+    expect(max($bindings))->toBeLessThanOrEqual(2100);
+});
+
+it('reads at most 1,000 values per query', function () {
+    putAppData(['countries.json' => json_encode(collect(range(1, 1001))->map(fn (int $number) => [
+        'code' => sprintf('%03s', base_convert((string) $number, 10, 36)),
+        'name' => "Land $number",
+        'alpha_2' => 'XA',
+    ])->all())]);
+    $bindings = [];
+    DB::listen(function (QueryExecuted $query) use (&$bindings) {
+        if (str_starts_with($query->sql, 'select')) {
+            $bindings[] = count($query->bindings);
+        }
+    });
+
+    $this->artisan('address:seed')->assertSuccessful();
+
+    expect(max($bindings))->toBeLessThanOrEqual(1000);
+});
+
+it('names the file when a row has no key', function () {
+    putAppData(['countries.json' => json_encode([['name' => 'Testland', 'alpha_2' => 'XA']])]);
+
+    expect(fn () => $this->artisan('address:seed')->run())
+        ->toThrow(RuntimeException::class, 'Missing [code] in ['.database_path('data/address/countries.json').']');
+});
+
+it('prints the rows read and written per level', function () {
+    $this->artisan('address:seed')->expectsOutputToContain('249 read, 249 written')->assertSuccessful();
+
+    $this->artisan('address:seed')->expectsOutputToContain('249 read, 0 written')->assertSuccessful();
+});
+
+it('seeds again when a key changes only in case', function () {
+    putAppData([
+        'countries.json' => json_encode([['code' => 'XXA', 'name' => 'Testland', 'alpha_2' => 'XA']]),
+        'countries/XXA/states.json' => json_encode([['code' => 'ab', 'name' => 'First']]),
+    ]);
+    $this->artisan('address:seed')->assertSuccessful();
+    putAppData(['countries/XXA/states.json' => json_encode([['code' => 'AB', 'name' => 'First']])]);
+
+    $this->artisan('address:seed')->assertSuccessful();
+
+    expect(State::query()->pluck('code')->all())->toContain('AB');
 });

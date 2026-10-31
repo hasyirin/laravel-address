@@ -3,6 +3,7 @@
 use Hasyirin\Address\Models\Country;
 use Hasyirin\Address\Models\PostOffice;
 use Hasyirin\Address\Models\State;
+use Illuminate\Database\UniqueConstraintViolationException;
 
 beforeEach(function () {
     $country = Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
@@ -61,4 +62,17 @@ it('supports soft deletes', function () {
 
     expect(PostOffice::count())->toBe(0)
         ->and(PostOffice::withTrashed()->count())->toBe(1);
+});
+
+it('rejects a second post office with the same name in a state', function () {
+    PostOffice::create(['state_id' => $this->state->id, 'name' => 'Shah Alam']);
+
+    expect(fn () => PostOffice::create(['state_id' => $this->state->id, 'name' => 'Shah Alam']))
+        ->toThrow(UniqueConstraintViolationException::class);
+});
+
+it('generates a unique name for every post office the factory creates in one state', function () {
+    PostOffice::factory()->count(60)->create(['state_id' => $this->state->id]);
+
+    expect(PostOffice::pluck('name')->unique())->toHaveCount(60);
 });

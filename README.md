@@ -43,7 +43,13 @@ Seed countries, states, districts, subdistricts, and post offices:
 php artisan address:seed
 ```
 
-The command matches existing rows by code (post offices by name), so you can run it again to apply data updates. Soft-deleted rows are updated but stay deleted. It follows the files down from `countries.json` and reads each level only for the parents listed in the level above.
+The command runs in one transaction, so a failure writes nothing. It compares each level with the database and writes only new or changed rows, so you can run it again to apply data updates, and a re-seed of unchanged data writes nothing. It follows the files down from `countries.json` and reads each level only for the parents listed in the level above.
+
+Rows match on code. Post offices match by name within a state. Name matching is exact on PostgreSQL and SQLite, and ignores case on MySQL and MariaDB.
+
+Soft-deleted rows are updated and stay deleted. The unique index also covers soft-deleted rows, so an app restores a trashed post office instead of creating a new one with the same name. The command never deletes rows, so a row that leaves the data stays in the database.
+
+Model events and observers do not run during the seed. The command clears the `local()` results of its own process when it finishes.
 
 The bundled subdistrict data is partial: it covers Negeri Sembilan and the Kemaman district of Terengganu.
 
@@ -53,7 +59,7 @@ To use your own data, publish the bundled files and edit them:
 php artisan vendor:publish --tag="address-data"
 ```
 
-The command reads from `base_path('data')` when that directory contains `countries.json`. Otherwise, it uses the package's bundled data.
+The command reads from `database/data/address` when that directory contains `countries.json`. Otherwise, it uses the package's bundled data.
 
 ## Usage
 

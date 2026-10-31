@@ -35,7 +35,7 @@ class AddressServiceProvider extends PackageServiceProvider
     public function packageBooted(): void
     {
         $this->publishes([
-            $this->package->basePath('/../data') => base_path('data'),
+            $this->package->basePath('/../data') => database_path('data/address'),
         ], "{$this->package->shortName()}-data");
     }
 }
