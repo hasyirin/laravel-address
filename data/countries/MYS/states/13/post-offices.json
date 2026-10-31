@@ -360,6 +360,12 @@
         ]
     },
     {
+        "name": "Pusat Mel Miri",
+        "postcodes": [
+            "98070"
+        ]
+    },
+    {
         "name": "Roban",
         "postcodes": [
             "95300"
@@ -411,6 +417,12 @@
             "96007",
             "96008",
             "96009"
+        ]
+    },
+    {
+        "name": "Sibu Jaya",
+        "postcodes": [
+            "96010"
         ]
     },
     {

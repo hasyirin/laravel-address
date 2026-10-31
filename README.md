@@ -51,7 +51,7 @@ Soft-deleted rows are updated and stay deleted. The unique index also covers sof
 
 Model events and observers do not run during the seed. The command clears the `local()` results of its own process when it finishes.
 
-The bundled subdistrict data is partial: it covers Negeri Sembilan and the Kemaman district of Terengganu.
+The bundled subdistrict data is partial: it covers Negeri Sembilan and the Kemaman district of Terengganu. The post office and postcode data comes from [AsyrafHussin/malaysia-postcodes](https://github.com/AsyrafHussin/malaysia-postcodes). `data/NOTICE.md` lists the data sources and their licenses.
 
 To use your own data, publish the bundled files and edit them:
 
@@ -359,6 +359,7 @@ Please review [our security policy](../../security/policy) on how to report secu
 ## Credits
 
 - [Hasyirin Fakhriy](https://github.com/hasyirin)
+- [Asyraf Hussin](https://github.com/AsyrafHussin), for the [Malaysian postcode data](https://github.com/AsyrafHussin/malaysia-postcodes)
 - [All Contributors](../../contributors)
 
 ## License

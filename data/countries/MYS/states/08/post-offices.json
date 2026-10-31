@@ -262,7 +262,9 @@
             "31900",
             "31907",
             "31909",
-            "31910"
+            "31910",
+            "31920",
+            "31950"
         ]
     },
     {
@@ -342,13 +344,6 @@
         ]
     },
     {
-        "name": "Mambang Di Awan",
-        "postcodes": [
-            "31920",
-            "31950"
-        ]
-    },
-    {
         "name": "Manong",
         "postcodes": [
             "33800"
@@ -408,8 +403,7 @@
     {
         "name": "Rantau Panjang",
         "postcodes": [
-            "34140",
-            "42160"
+            "34140"
         ]
     },
     {
@@ -435,7 +429,7 @@
         ]
     },
     {
-        "name": "Seri Manjong",
+        "name": "Seri Manjung",
         "postcodes": [
             "32040",
             "32050"
@@ -563,7 +557,7 @@
         ]
     },
     {
-        "name": "Tldm Lumut",
+        "name": "TLDM Lumut",
         "postcodes": [
             "32100"
         ]

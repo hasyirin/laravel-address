@@ -14,12 +14,6 @@
         ]
     },
     {
-        "name": "Bandar Baru Serting",
-        "postcodes": [
-            "72130"
-        ]
-    },
-    {
         "name": "Bandar Seri Jempol",
         "postcodes": [
             "72120",
@@ -247,6 +241,15 @@
         ]
     },
     {
+        "name": "Si Rusa",
+        "postcodes": [
+            "71050",
+            "71059",
+            "71250",
+            "71259"
+        ]
+    },
+    {
         "name": "Simpang Durian",
         "postcodes": [
             "72400",
@@ -259,15 +262,6 @@
             "72300",
             "72307",
             "72309"
-        ]
-    },
-    {
-        "name": "Si Rusa",
-        "postcodes": [
-            "71050",
-            "71059",
-            "71250",
-            "71259"
         ]
     },
     {
