@@ -135,6 +135,16 @@ it('keeps soft-deleted places on the address', function () {
         ->each->not->toBeNull();
 });
 
+it('includes soft-deleted places in relation queries', function () {
+    Address::factory()->for($this->user, 'addressable')->create(['post_office_id' => $this->postOffice->id]);
+
+    $this->postOffice->delete();
+
+    expect(Address::whereHas('postOffice')->count())->toBe(1)
+        ->and(Address::has('postOffice')->count())->toBe(1)
+        ->and(Address::whereHas('postOffice', fn ($query) => $query->withoutTrashed())->count())->toBe(0);
+});
+
 it('does not mass assign the owner keys', function () {
     $address = new Address(['addressable_type' => User::class, 'addressable_id' => 1, 'type' => 'primary']);
 

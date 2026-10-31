@@ -305,7 +305,11 @@ Country
            └── Postcode
 ```
 
-Each `Address` optionally belongs to a `Country`, `State`, `District`, `Subdistrict`, and `PostOffice`, and is polymorphically attached to any model via the `addressable` morph relationship. These relations include soft-deleted places, so a retired post office still shows on old addresses. `whereHas()` and `has()` on these relations still exclude soft-deleted places.
+Each `Address` optionally belongs to a `Country`, `State`, `District`, `Subdistrict`, and `PostOffice`, and is polymorphically attached to any model via the `addressable` morph relationship. These relations include soft-deleted places, so a retired post office still shows on old addresses. `whereHas()` and `has()` on these relations include them too. To leave them out, add `withoutTrashed()`:
+
+```php
+Address::whereHas('postOffice', fn ($query) => $query->withoutTrashed())->get();
+```
 
 ## Models
 

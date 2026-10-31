@@ -12,7 +12,7 @@ All notable changes to `laravel-address` will be documented in this file.
 - `formatted()` takes `$separator` as its first parameter
 - Postcode and town are now one part, joined by a space: `40000 Shah Alam`
 - `addressable_type` and `addressable_id` are no longer mass assignable. Set the owner through the relation
-- `Address` relations now include soft-deleted places
+- `Address` relations now include soft-deleted places, also in `whereHas()` and `has()`
 - `local()` now keeps its result for one request or queue job. The shared cache, its keys, and `localityDescendants()` are removed. A model that uses `HasLocality` directly must implement `localityLevels()`
 - Postcodes move to a `Postcode` model. `post_offices.postcodes` is gone, and `$postOffice->postcodes` is a `HasMany`. The data files keep their shape
 - `address:seed` reads from and publishes to `database/data/address` instead of `data`
