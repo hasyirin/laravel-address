@@ -4,32 +4,55 @@ declare(strict_types=1);
 
 namespace Hasyirin\Address\Concerns;
 
+use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 trait HasLocality
 {
     abstract public function scopeLocal(Builder $query): void;
 
+    /**
+     * @return array<int, string>
+     */
+    abstract protected static function localityLevels(): array;
+
     public static function bootHasLocality(): void
     {
         $clear = static fn () => static::clearLocalCache();
 
-        static::saved($clear);
-        static::deleted($clear);
+        $clearAfterWrite = static function (Model $model) use ($clear) {
+            $clear();
+
+            $model->getConnection()->afterRollBack($clear);
+        };
+
+        static::saving($clear);
+        static::saved($clearAfterWrite);
+        static::deleting($clear);
+        static::deleted($clearAfterWrite);
     }
 
     public static function local(): ?static
     {
+        if (in_array(null, static::localityCodes(), true)) {
+            return null;
+        }
+
         $query = static::query();
 
-        $locality = (array) config('address.locality');
+        // getModel() is the builder's own template instance, never routed through
+        // newModelInstance(), so getConnectionName() on it is unset. getConnection()
+        // (unlike getConnectionName()) resolves the app's actual default connection
+        // instead of returning null, matching what a normally-queried instance reports.
+        $model = $query->getModel();
+        $connection = $model->getConnection();
 
-        // Cache the row's raw attributes, never the model instance: a persistent
-        // store (e.g. redis) serializes a cached Eloquent model and hands it back
-        // as a __PHP_Incomplete_Class on later requests. Rehydrate from the snapshot.
-        $snapshot = cache()->memo()->get(static::localCacheKey());
+        $memo = app('address.locality');
+        $key = static::localityMemoKey($connection);
 
-        if (! is_array($snapshot) || ($snapshot['locality'] ?? null) !== $locality) {
+        // The memo stores attributes so that callers never share one model instance.
+        if (! isset($memo[$key])) {
             $attributes = $query->local()->first()?->getAttributes();
 
             // Never cache a miss: rows inserted without model events would stay hidden.
@@ -37,37 +60,44 @@ trait HasLocality
                 return null;
             }
 
-            cache()->memo()->forever(static::localCacheKey(), $snapshot = ['locality' => $locality, 'attributes' => $attributes]);
+            $memo[$key] = $attributes;
         }
 
-        // getModel() is the builder's own template instance, never routed through
-        // newModelInstance(), so getConnectionName() on it is unset. getConnection()
-        // (unlike getConnectionName()) resolves the app's actual default connection
-        // instead of returning null, matching what a normally-queried instance reports.
-        $model = $query->getModel();
-
-        return $model->newFromBuilder($snapshot['attributes'], $model->getConnection()->getName());
+        return $model->newFromBuilder($memo[$key], $connection->getName());
     }
 
     public static function clearLocalCache(): void
     {
-        cache()->memo()->forget(static::localCacheKey());
+        app('address.locality')->exchangeArray([]);
+    }
 
-        foreach (static::localityDescendants() as $descendant) {
-            $descendant::clearLocalCache();
-        }
+    protected static function localityCode(string $level): ?string
+    {
+        $code = config("address.locality.$level");
+
+        return $code === null ? null : (string) $code;
     }
 
     /**
-     * @return array<int, class-string>
+     * @return array<string, ?string>
      */
-    protected static function localityDescendants(): array
+    protected static function localityCodes(): array
     {
-        return [];
+        $levels = static::localityLevels();
+
+        return array_combine($levels, array_map(static::localityCode(...), $levels));
     }
 
-    protected static function localCacheKey(): string
+    protected static function localityMemoKey(Connection $connection): string
     {
-        return 'address.locality.'.static::class;
+        return json_encode([
+            static::localityCodes(),
+            $connection->getDriverName(),
+            $connection->getConfig('host'),
+            $connection->getConfig('port'),
+            $connection->getDatabaseName(),
+            $connection->getTablePrefix(),
+            $connection->getConfig('search_path'),
+        ]);
     }
 }

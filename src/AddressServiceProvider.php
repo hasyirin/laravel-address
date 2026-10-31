@@ -2,6 +2,7 @@
 
 namespace Hasyirin\Address;
 
+use ArrayObject;
 use Hasyirin\Address\Commands\SeedCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -24,6 +25,11 @@ class AddressServiceProvider extends PackageServiceProvider
             ->hasCommands([
                 SeedCommand::class,
             ]);
+    }
+
+    public function packageRegistered(): void
+    {
+        $this->app->scoped('address.locality', fn () => new ArrayObject);
     }
 
     public function packageBooted(): void

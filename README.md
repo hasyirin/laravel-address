@@ -204,7 +204,11 @@ Compose with the `local()` query scope:
 District::query()->local()->where(...)->get();
 ```
 
-The result is cached forever in your default cache store and memoized per request via `cache()->memo()`. The cached entry records the locality codes it was resolved for, so a config change takes effect immediately. A miss is never cached. `saved` and `deleted` listeners on each model cascade-clear caches down the chain (`Country` save clears `State` and `District` caches too). Writes that skip model events, such as query builder updates, `upsert()`, or `saveQuietly()`, do not clear the cache. For manual invalidation:
+`local()` keeps its result for the current request or queue job, and Laravel discards it after each one. The result is kept per configured codes and per database, so a config change or a tenant switch resolves the row again. When the code of a level or of a parent level is `null`, `local()` returns `null` without a query. A configured code with no row is never kept, so it runs one query per call.
+
+Any Eloquent save or delete of a `Country`, `State`, or `District` clears the kept results, and so does a rollback of a transaction that saved one. `address:seed` clears them too. Long-running processes, such as commands and daemons, keep a result until they save one of these models or call `clearLocalCache()`.
+
+Writes that skip model events, such as query builder updates, `upsert()`, or `saveQuietly()`, do not clear the kept results. If the same request reads `local()` after such a write, clear them first:
 
 ```php
 Country::clearLocalCache();

@@ -80,31 +80,6 @@ it('memoizes local() within a request and invalidates on save', function () {
     expect(Country::local())->toBeNull();
 });
 
-it('caches local() across requests as a serialization-safe snapshot', function () {
-    // Regression: local() cached the Eloquent model itself, which a persistent
-    // store (e.g. redis) serializes and returns as __PHP_Incomplete_Class on a
-    // later request. It must persist the raw attributes instead, then rehydrate.
-    config([
-        'cache.stores.persistent' => ['driver' => 'array', 'serialize' => true],
-        'cache.serializable_classes' => false,
-        'cache.default' => 'persistent',
-        'address.locality.country' => 'MYS',
-    ]);
-    Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
-
-    expect(Country::local())->toBeInstanceOf(Country::class)
-        ->and(Country::local()->code)->toBe('MYS');
-
-    // Persisted for later requests, but as a plain attributes array — never a
-    // serialized model (which would come back as __PHP_Incomplete_Class).
-    app()->forgetScopedInstances();
-    DB::enableQueryLog();
-
-    expect(Country::local())->toBeInstanceOf(Country::class)
-        ->code->toBe('MYS')
-        ->and(DB::getQueryLog())->toBe([]);
-});
-
 it('follows a locality config change on a later request', function () {
     config([
         'cache.stores.persistent' => ['driver' => 'array', 'serialize' => true],
@@ -120,34 +95,6 @@ it('follows a locality config change on a later request', function () {
     app()->forgetScopedInstances();
 
     expect(Country::local()?->code)->toBe('SGP');
-});
-
-it('ignores a local() value cached by an older version', function () {
-    config([
-        'cache.stores.persistent' => ['driver' => 'array', 'serialize' => true],
-        'cache.default' => 'persistent',
-        'address.locality.country' => 'MYS',
-    ]);
-    $mys = Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
-
-    cache()->forever('address.locality.'.Country::class, $mys->fresh());
-    app()->forgetScopedInstances();
-
-    expect($mys->is(Country::local()))->toBeTrue();
-});
-
-it('ignores local() attributes cached by an older version', function () {
-    config([
-        'cache.stores.persistent' => ['driver' => 'array', 'serialize' => true],
-        'cache.default' => 'persistent',
-        'address.locality.country' => 'MYS',
-    ]);
-    $mys = Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
-
-    cache()->forever('address.locality.'.Country::class, [...$mys->getAttributes(), 'name' => 'Old Name']);
-    app()->forgetScopedInstances();
-
-    expect(Country::local()?->name)->toBe('Malaysia');
 });
 
 it('clears the cached local() when the row changes under another locality config', function () {
