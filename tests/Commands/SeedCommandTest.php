@@ -388,3 +388,14 @@ it('writes nothing on a re-seed when a mutator changes the key', function () {
     expect(Postcode::sole()->code)->toBe('SW1A 1AA')
         ->and(collect(DB::getQueryLog())->pluck('query'))->each->toStartWith('select');
 });
+
+it('names the row when the database merges two keys', function () {
+    putAppData([
+        'countries.json' => json_encode([['code' => 'XXA', 'name' => 'Testland', 'alpha_2' => 'XA']]),
+        'countries/XXA/states.json' => json_encode([['code' => '01', 'name' => 'First']]),
+        'countries/XXA/states/01/post-offices.json' => json_encode([['name' => 'Town A', 'postcodes' => ['99999']], ['name' => 'town a', 'postcodes' => ['99998']]]),
+    ]);
+
+    expect(fn () => $this->artisan('address:seed')->run())
+        ->toThrow(RuntimeException::class, 'countries/XXA/states/01/post-offices/Town A');
+})->skip(fn () => ! in_array(DB::getDriverName(), ['mysql', 'mariadb']), 'Only MySQL and MariaDB merge keys that differ only in case.');

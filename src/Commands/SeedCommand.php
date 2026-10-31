@@ -108,7 +108,14 @@ class SeedCommand extends Command
             $existing = $read();
         }
 
-        return array_map(fn (string $unique) => $existing->get($unique)->getKey(), $uniqueKeys);
+        $ids = [];
+
+        foreach ($uniqueKeys as $path => $unique) {
+            $ids[$path] = $existing->get($unique)?->getKey()
+                ?? throw new RuntimeException("Found no row for [$path] after seeding. Its key may differ from another row's key only in case, accents, or trailing spaces.");
+        }
+
+        return $ids;
     }
 
     /**
