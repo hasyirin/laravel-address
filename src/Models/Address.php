@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use UnitEnum;
 
 /**
@@ -20,6 +21,8 @@ use UnitEnum;
  * @property ?int $post_office_id
  * @property ?int $country_id
  * @property ?int $state_id
+ * @property ?int $district_id
+ * @property ?int $subdistrict_id
  * @property string $type
  * @property ?string $line_1
  * @property ?string $line_2
@@ -31,6 +34,8 @@ use UnitEnum;
  * @property Model $addressable
  * @property ?Country $country
  * @property ?State $state
+ * @property ?District $district
+ * @property ?Subdistrict $subdistrict
  * @property ?PostOffice $postOffice
  */
 class Address extends Model
@@ -44,11 +49,11 @@ class Address extends Model
     }
 
     protected $fillable = [
-        'addressable_type',
-        'addressable_id',
         'post_office_id',
         'country_id',
         'state_id',
+        'district_id',
+        'subdistrict_id',
         'type',
         'line_1',
         'line_2',
@@ -97,17 +102,27 @@ class Address extends Model
 
     public function country(): BelongsTo
     {
-        return $this->belongsTo(config('address.models.country'));
+        return $this->belongsTo(config('address.models.country'))->withoutGlobalScope(SoftDeletingScope::class);
     }
 
     public function state(): BelongsTo
     {
-        return $this->belongsTo(config('address.models.state'));
+        return $this->belongsTo(config('address.models.state'))->withoutGlobalScope(SoftDeletingScope::class);
+    }
+
+    public function district(): BelongsTo
+    {
+        return $this->belongsTo(config('address.models.district'))->withoutGlobalScope(SoftDeletingScope::class);
+    }
+
+    public function subdistrict(): BelongsTo
+    {
+        return $this->belongsTo(config('address.models.subdistrict'))->withoutGlobalScope(SoftDeletingScope::class);
     }
 
     public function postOffice(): BelongsTo
     {
-        return $this->belongsTo(config('address.models.post-office'));
+        return $this->belongsTo(config('address.models.post-office'))->withoutGlobalScope(SoftDeletingScope::class);
     }
 
     public function scopeOfType(Builder $query, Arrayable|BackedEnum|UnitEnum|array|string $type): void

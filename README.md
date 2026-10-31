@@ -300,19 +300,19 @@ Country
            └── Postcode
 ```
 
-Each `Address` optionally belongs to a `Country`, `State`, and `PostOffice`, and is polymorphically attached to any model via the `addressable` morph relationship.
+Each `Address` optionally belongs to a `Country`, `State`, `District`, `Subdistrict`, and `PostOffice`, and is polymorphically attached to any model via the `addressable` morph relationship. These relations include soft-deleted places, so a retired post office still shows on old addresses. `whereHas()` and `has()` on these relations still exclude soft-deleted places.
 
 ## Models
 
-| Model         | Key Fields                                                                          |
-|---------------|-------------------------------------------------------------------------------------|
-| `Country`     | `code` (ISO 3166-1 alpha-3), `alpha_2`, `name`                                      |
-| `State`       | `code`, `name`, belongs to `Country`                                                |
-| `District`    | `code`, `name`, belongs to `State`                                                  |
-| `Subdistrict` | `code`, `name`, belongs to `District`                                               |
-| `PostOffice`  | `name`, belongs to `State`, has many `Postcode`                                     |
-| `Postcode`    | `code`, `latitude`, `longitude`, belongs to `PostOffice`                            |
-| `Address`     | `type`, `line_1`-`line_3`, `postcode`, `latitude`, `longitude`, `properties` (JSON) |
+| Model         | Key Fields                                                                                                           |
+|---------------|----------------------------------------------------------------------------------------------------------------------|
+| `Country`     | `code` (ISO 3166-1 alpha-3), `alpha_2`, `name`                                                                       |
+| `State`       | `code`, `name`, belongs to `Country`                                                                                 |
+| `District`    | `code`, `name`, belongs to `State`                                                                                   |
+| `Subdistrict` | `code`, `name`, belongs to `District`                                                                                |
+| `PostOffice`  | `name`, belongs to `State`, has many `Postcode`                                                                      |
+| `Postcode`    | `code`, `latitude`, `longitude`, belongs to `PostOffice`                                                             |
+| `Address`     | `type`, `line_1`-`line_3`, `postcode`, `district_id`, `subdistrict_id`, `latitude`, `longitude`, `properties` (JSON) |
 
 All models use soft deletes.
 

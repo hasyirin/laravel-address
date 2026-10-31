@@ -2,9 +2,12 @@
 
 use Hasyirin\Address\Models\Address;
 use Hasyirin\Address\Models\Country;
+use Hasyirin\Address\Models\District;
 use Hasyirin\Address\Models\PostOffice;
 use Hasyirin\Address\Models\State;
+use Hasyirin\Address\Models\Subdistrict;
 use Hasyirin\Address\Tests\Fixtures\EncryptedAddress;
+use Hasyirin\Address\Tests\Fixtures\PlainCountry;
 use Hasyirin\Address\Tests\Fixtures\User;
 use Illuminate\Database\Eloquent\MissingAttributeException;
 use Illuminate\Database\Eloquent\Model;
@@ -102,6 +105,48 @@ it('clears the state when the state is force deleted', function () {
     expect($address->fresh()->state_id)->toBeNull();
 });
 
+it('belongs to a district and a subdistrict', function () {
+    $district = District::create(['state_id' => $this->state->id, 'code' => '01', 'name' => 'Petaling']);
+    $subdistrict = Subdistrict::create(['district_id' => $district->id, 'code' => '01', 'name' => 'Damansara']);
+
+    $address = Address::factory()->for($this->user, 'addressable')
+        ->create(['district_id' => $district->id, 'subdistrict_id' => $subdistrict->id]);
+
+    expect($address->district?->is($district))->toBeTrue()
+        ->and($address->subdistrict?->is($subdistrict))->toBeTrue();
+});
+
+it('keeps soft-deleted places on the address', function () {
+    $district = District::create(['state_id' => $this->state->id, 'code' => '01', 'name' => 'Petaling']);
+    $subdistrict = Subdistrict::create(['district_id' => $district->id, 'code' => '01', 'name' => 'Damansara']);
+    $address = Address::factory()->for($this->user, 'addressable')->create([
+        'country_id' => $this->country->id, 'state_id' => $this->state->id, 'district_id' => $district->id,
+        'subdistrict_id' => $subdistrict->id, 'post_office_id' => $this->postOffice->id,
+    ]);
+
+    foreach ([$this->country, $this->state, $district, $subdistrict, $this->postOffice] as $place) {
+        $place->delete();
+    }
+    $fresh = $address->fresh();
+
+    expect([$fresh->country, $fresh->state, $fresh->district, $fresh->subdistrict, $fresh->postOffice])
+        ->each->not->toBeNull();
+});
+
+it('does not mass assign the owner keys', function () {
+    $address = new Address(['addressable_type' => User::class, 'addressable_id' => 1, 'type' => 'primary']);
+
+    expect($address->addressable_type)->toBeNull()
+        ->and($address->addressable_id)->toBeNull();
+});
+
+it('loads a place whose model does not use soft deletes', function () {
+    config(['address.models.country' => PlainCountry::class]);
+    $address = Address::factory()->for($this->user, 'addressable')->create(['country_id' => $this->country->id]);
+
+    expect($address->country)->toBeInstanceOf(PlainCountry::class);
+});
+
 it('has a morph-to addressable relationship', function () {
     $address = Address::factory()
         ->for($this->user, 'addressable')
@@ -183,12 +228,11 @@ it('does not update an unchanged address when saving', function () {
 it('normalizes line fields through subclass casts', function () {
     config(['app.key' => 'base64:'.base64_encode(str_repeat('k', 32))]);
 
-    $address = EncryptedAddress::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $this->user->id,
+    $address = new EncryptedAddress([
         'type' => 'primary',
         'line_1' => '  No. 1,   Jalan Test,  ',
     ]);
+    $address->addressable()->associate($this->user)->save();
 
     expect($address->fresh()->line_1)->toBe('No. 1, Jalan Test')
         ->and(DB::table('addresses')->where('id', $address->id)->value('line_1'))->not->toBe('No. 1, Jalan Test');
