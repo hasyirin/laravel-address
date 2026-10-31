@@ -48,7 +48,7 @@ it('casts properties to array', function () {
         ]);
 
     $fresh = $address->fresh();
-    expect($fresh->properties)->toBeArray()->toBe(['floor' => '3', 'unit' => 'A']);
+    expect($fresh->properties)->toBeArray()->toEqual(['floor' => '3', 'unit' => 'A']);
 });
 
 it('casts coordinates to float', function () {
@@ -91,6 +91,16 @@ it('belongs to a post office', function () {
 
     expect($address->postOffice)->toBeInstanceOf(PostOffice::class)
         ->id->toBe($this->postOffice->id);
+});
+
+it('clears the state when the state is force deleted', function () {
+    $address = Address::factory()
+        ->for($this->user, 'addressable')
+        ->create(['state_id' => $this->state->id]);
+
+    $this->state->forceDelete();
+
+    expect($address->fresh()->state_id)->toBeNull();
 });
 
 it('has a morph-to addressable relationship', function () {

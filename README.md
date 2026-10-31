@@ -12,7 +12,7 @@ Comes with built-in geographical data for Malaysia and a seeder command to popul
 ## Requirements
 
 - PHP 8.4+
-- Laravel 12.9+ or 13
+- Laravel 13.35+
 
 ## Installation
 
