@@ -169,7 +169,7 @@ it('has many districts through states', function () {
 it('has many post offices through states', function () {
     $country = Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
     $state = State::create(['country_id' => $country->id, 'code' => '10', 'name' => 'Selangor']);
-    PostOffice::create(['state_id' => $state->id, 'name' => 'Shah Alam', 'postcodes' => ['40000']]);
+    PostOffice::create(['state_id' => $state->id, 'name' => 'Shah Alam']);
 
     expect($country->postOffices)->toHaveCount(1)
         ->first()->name->toBe('Shah Alam');
@@ -195,7 +195,7 @@ it('resolves its relations when the country model has another class name', funct
     $nation = Nation::create(['code' => 'MYS', 'name' => 'Malaysia']);
     $state = State::create(['country_id' => $nation->id, 'code' => '10', 'name' => 'Selangor']);
     District::create(['state_id' => $state->id, 'code' => '01', 'name' => 'Petaling']);
-    PostOffice::create(['state_id' => $state->id, 'name' => 'Shah Alam', 'postcodes' => ['40000']]);
+    PostOffice::create(['state_id' => $state->id, 'name' => 'Shah Alam']);
     Address::create([
         'addressable_type' => User::class,
         'addressable_id' => User::create(['name' => 'Test'])->id,

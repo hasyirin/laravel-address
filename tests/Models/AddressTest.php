@@ -17,7 +17,6 @@ beforeEach(function () {
     $this->postOffice = PostOffice::create([
         'state_id' => $this->state->id,
         'name' => 'Shah Alam',
-        'postcodes' => ['40000'],
     ]);
 });
 
@@ -400,7 +399,6 @@ it('drops parts that are empty after trimming when rendering capitalized', funct
     $postOffice = PostOffice::create([
         'state_id' => $this->state->id,
         'name' => 'Kukup',
-        'postcodes' => ['82300'],
     ]);
 
     $address = Address::factory()
@@ -420,7 +418,6 @@ it('keeps the last character of the last line when rendering as block', function
     $postOffice = PostOffice::create([
         'state_id' => $this->state->id,
         'name' => 'Kukup',
-        'postcodes' => ['82300'],
     ]);
 
     $address = Address::factory()

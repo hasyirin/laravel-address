@@ -2,6 +2,7 @@
 
 use Hasyirin\Address\Models\Country;
 use Hasyirin\Address\Models\District;
+use Hasyirin\Address\Models\Postcode;
 use Hasyirin\Address\Models\PostOffice;
 use Hasyirin\Address\Models\State;
 use Hasyirin\Address\Models\Subdistrict;
@@ -52,7 +53,12 @@ it('seeds every level from the data files', function () {
     $rows = fn (string $pattern) => collect(glob(__DIR__."/../../data/countries/$pattern"))
         ->sum(fn (string $file) => count(json_decode(file_get_contents($file), true) ?? []));
 
+    $postcodes = collect(glob(__DIR__.'/../../data/countries/*/states/*/post-offices.json'))
+        ->flatMap(fn (string $file) => json_decode(file_get_contents($file), true))
+        ->sum(fn (array $postOffice) => count($postOffice['postcodes']));
+
     expect(State::count())->toBe($rows('*/states.json'))
+        ->and(Postcode::count())->toBe($postcodes)
         ->and(PostOffice::count())->toBe($rows('*/states/*/post-offices.json'))
         ->and(District::count())->toBe($rows('*/states/*/districts.json'))
         ->and(Subdistrict::count())->toBe($rows('*/states/*/districts/*/subdistricts.json'));
@@ -68,7 +74,7 @@ it('links seeded rows to their parents', function () {
     expect($district->state->name)->toBe('Negeri Sembilan')
         ->and($district->state->country->code)->toBe('MYS')
         ->and($postOffice->state->name)->toBe('Negeri Sembilan')
-        ->and($postOffice->postcodes)->toBe(['72100', '72107', '72109'])
+        ->and($postOffice->postcodes->pluck('code')->sort()->values()->all())->toBe(['72100', '72107', '72109'])
         ->and($subdistrict->district->is($district))->toBeTrue();
 });
 
@@ -108,7 +114,7 @@ it('seeds on a connection with a table prefix', function () {
         'database.default' => 'prefixed',
     ]);
 
-    foreach (['create_countries_table', 'create_states_table', 'create_post_offices_table', 'create_districts_table', 'create_subdistricts_table'] as $migration) {
+    foreach (['create_countries_table', 'create_states_table', 'create_post_offices_table', 'create_postcodes_table', 'create_districts_table', 'create_subdistricts_table'] as $migration) {
         (include __DIR__."/../../database/migrations/{$migration}.php.stub")->up();
     }
 
@@ -163,21 +169,21 @@ it('resolves the local country from locality config after seeding', function () 
         ->and($local->code)->toBe('MYS');
 });
 
-it('seeds every level in 16 queries', function () {
+it('seeds every level in 33 queries', function () {
     DB::enableQueryLog();
 
     $this->artisan('address:seed')->assertSuccessful();
 
-    expect(DB::getQueryLog())->toHaveCount(16);
+    expect(DB::getQueryLog())->toHaveCount(33);
 });
 
-it('reads 5 times and writes nothing when the data did not change', function () {
+it('reads 6 times and writes nothing when the data did not change', function () {
     $this->artisan('address:seed')->assertSuccessful();
     DB::enableQueryLog();
 
     $this->artisan('address:seed')->assertSuccessful();
 
-    expect(collect(DB::getQueryLog())->pluck('query'))->toHaveCount(5)
+    expect(collect(DB::getQueryLog())->pluck('query'))->toHaveCount(6)
         ->each->toStartWith('select');
 });
 
@@ -354,4 +360,31 @@ it('seeds again when a key changes only in case', function () {
     $this->artisan('address:seed')->assertSuccessful();
 
     expect(State::query()->pluck('code')->all())->toContain('AB');
+});
+
+it('lists a postcode under two post offices', function () {
+    putAppData([
+        'countries.json' => json_encode([['code' => 'XXA', 'name' => 'Testland', 'alpha_2' => 'XA']]),
+        'countries/XXA/states.json' => json_encode([['code' => '01', 'name' => 'First']]),
+        'countries/XXA/states/01/post-offices.json' => json_encode([['name' => 'Town A', 'postcodes' => ['99999']], ['name' => 'Town B', 'postcodes' => ['99999']]]),
+    ]);
+
+    $this->artisan('address:seed')->assertSuccessful();
+
+    expect(Postcode::query()->where('code', '99999')->count())->toBe(2);
+});
+
+it('writes nothing on a re-seed when a mutator changes the key', function () {
+    putAppData([
+        'countries.json' => json_encode([['code' => 'XXA', 'name' => 'Testland', 'alpha_2' => 'XA']]),
+        'countries/XXA/states.json' => json_encode([['code' => '01', 'name' => 'First']]),
+        'countries/XXA/states/01/post-offices.json' => json_encode([['name' => 'Town A', 'postcodes' => ['sw1a 1aa']]]),
+    ]);
+    $this->artisan('address:seed')->assertSuccessful();
+    DB::enableQueryLog();
+
+    $this->artisan('address:seed')->assertSuccessful();
+
+    expect(Postcode::sole()->code)->toBe('SW1A 1AA')
+        ->and(collect(DB::getQueryLog())->pluck('query'))->each->toStartWith('select');
 });

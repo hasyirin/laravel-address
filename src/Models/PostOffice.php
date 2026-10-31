@@ -8,14 +8,16 @@ use Hasyirin\Address\Database\Factories\PostOfficeFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 
 /**
  * @property int $id
  * @property int $state_id
  * @property string $name
- * @property array $postcodes
  * @property State $state
+ * @property Collection<Postcode> $postcodes
  */
 class PostOffice extends Model
 {
@@ -30,19 +32,7 @@ class PostOffice extends Model
     protected $fillable = [
         'state_id',
         'name',
-        'postcodes',
     ];
-
-    protected $attributes = [
-        'postcodes' => '[]',
-    ];
-
-    protected function casts(): array
-    {
-        return [
-            'postcodes' => 'array',
-        ];
-    }
 
     public function getTable(): string
     {
@@ -52,5 +42,10 @@ class PostOffice extends Model
     public function state(): BelongsTo
     {
         return $this->belongsTo(config('address.models.state'));
+    }
+
+    public function postcodes(): HasMany
+    {
+        return $this->hasMany(config('address.models.postcode'), 'post_office_id');
     }
 }

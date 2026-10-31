@@ -21,7 +21,6 @@ class PostOfficeFactory extends Factory
         return [
             'state_id' => State::factory(),
             'name' => fake()->unique()->city(),
-            'postcodes' => [fake()->postcode()],
         ];
     }
 }

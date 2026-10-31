@@ -28,7 +28,11 @@ class SeedCommand extends Command
 
             $states = $this->seed($this->rows($countries, 'states', 'code'), config('address.models.state'), 'country_id', 'code', ['name']);
 
-            $this->seed($this->rows($states, 'post-offices', 'name'), config('address.models.post-office'), 'state_id', 'name', ['postcodes'], hasChildren: false);
+            $postOffices = $this->rows($states, 'post-offices', 'name');
+
+            $postOfficeIds = $this->seed($postOffices, config('address.models.post-office'), 'state_id', 'name', []);
+
+            $this->seed($this->postcodes($postOffices, $postOfficeIds), config('address.models.postcode'), 'post_office_id', 'code', [], hasChildren: false);
 
             $districts = $this->seed($this->rows($states, 'districts', 'code'), config('address.models.district'), 'state_id', 'code', ['name']);
 
@@ -137,6 +141,24 @@ class SeedCommand extends Command
         foreach ($parents as $path => $parentId) {
             foreach ($this->read(ltrim("$path/$name.json", '/'), $key) as $row) {
                 $rows[ltrim("$path/$name/{$row[$key]}", '/')] = [$parentId, $row];
+            }
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @param  array<string, array{int|null, array<string, mixed>}>  $postOffices
+     * @param  array<string, int>  $ids
+     * @return array<string, array{int, array{code: string}}>
+     */
+    protected function postcodes(array $postOffices, array $ids): array
+    {
+        $rows = [];
+
+        foreach ($postOffices as $path => [, $postOffice]) {
+            foreach ($postOffice['postcodes'] ?? [] as $code) {
+                $rows["$path/postcodes/$code"] = [$ids[$path], ['code' => $code]];
             }
         }
 

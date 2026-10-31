@@ -14,33 +14,10 @@ it('can create a post office', function () {
     $postOffice = PostOffice::create([
         'state_id' => $this->state->id,
         'name' => 'Shah Alam',
-        'postcodes' => ['40000', '40100'],
     ]);
 
     expect($postOffice)->toBeInstanceOf(PostOffice::class)
-        ->and($postOffice->name)->toBe('Shah Alam')
-        ->and($postOffice->postcodes)->toBe(['40000', '40100']);
-});
-
-it('casts postcodes to array', function () {
-    $postOffice = PostOffice::create([
-        'state_id' => $this->state->id,
-        'name' => 'Shah Alam',
-        'postcodes' => ['40000'],
-    ]);
-
-    $fresh = $postOffice->fresh();
-
-    expect($fresh->postcodes)->toBeArray()->toBe(['40000']);
-});
-
-it('defaults postcodes to empty array', function () {
-    $postOffice = PostOffice::create([
-        'state_id' => $this->state->id,
-        'name' => 'Shah Alam',
-    ]);
-
-    expect($postOffice->postcodes)->toBeArray()->toBe([]);
+        ->and($postOffice->name)->toBe('Shah Alam');
 });
 
 it('belongs to a state', function () {

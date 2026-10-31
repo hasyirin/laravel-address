@@ -3,6 +3,7 @@
 use Hasyirin\Address\Models\Address;
 use Hasyirin\Address\Models\Country;
 use Hasyirin\Address\Models\District;
+use Hasyirin\Address\Models\Postcode;
 use Hasyirin\Address\Models\PostOffice;
 use Hasyirin\Address\Models\State;
 use Hasyirin\Address\Models\Subdistrict;
@@ -21,6 +22,7 @@ return [
         'district' => District::class,
         'subdistrict' => Subdistrict::class,
         'post-office' => PostOffice::class,
+        'postcode' => Postcode::class,
     ],
 
     'tables' => [
@@ -30,5 +32,6 @@ return [
         'districts' => 'districts',
         'subdistricts' => 'subdistricts',
         'post_offices' => 'post_offices',
+        'postcodes' => 'postcodes',
     ],
 ];

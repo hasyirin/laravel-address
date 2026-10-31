@@ -5,7 +5,7 @@
 [![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/hasyirin/laravel-address/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/hasyirin/laravel-address/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/hasyirin/laravel-address.svg?style=flat-square)](https://packagist.org/packages/hasyirin/laravel-address)
 
-A Laravel package for managing addresses with polymorphic relationships and hierarchical geographical data (countries, states, districts, subdistricts, and post offices).
+A Laravel package for managing addresses with polymorphic relationships and hierarchical geographical data (countries, states, districts, subdistricts, post offices, and postcodes).
 
 Comes with built-in geographical data for Malaysia and a seeder command to populate reference tables.
 
@@ -37,7 +37,7 @@ php artisan vendor:publish --tag="address-config"
 
 ## Seeding Geographical Data
 
-Seed countries, states, districts, subdistricts, and post offices:
+Seed countries, states, districts, subdistricts, post offices, and postcodes:
 
 ```bash
 php artisan address:seed
@@ -220,6 +220,36 @@ Writes that skip model events, such as query builder updates, `upsert()`, or `sa
 Country::clearLocalCache();
 ```
 
+## Postcodes
+
+Each `PostOffice` has many `Postcode` rows. One postcode can belong to more than one post office, because a postcode can cover more than one town.
+
+Find the post office and state of a postcode:
+
+```php
+use Hasyirin\Address\Models\Postcode;
+
+Postcode::query()->where('code', '50000')->with('postOffice.state.country')->get();
+```
+
+Validate that a postcode belongs to a post office:
+
+```php
+use Illuminate\Validation\Rule;
+
+Rule::exists(config('address.models.postcode'), 'code')
+    ->where('post_office_id', $postOfficeId)
+    ->withoutTrashed();
+```
+
+`Postcode::code` is squished and uppercased when it is set. `latitude` and `longitude` are empty until your app fills them. Geocoding an address stays your app's job; store the result in `latitude` and `longitude` on the `Address`.
+
+The unique index on `post_office_id` and `code` also covers soft-deleted rows. To bring back a trashed postcode, restore it instead of creating it again:
+
+```php
+Postcode::withTrashed()->where('post_office_id', $postOfficeId)->where('code', '50000')->restore();
+```
+
 ## Configuration
 
 ```php
@@ -241,6 +271,7 @@ return [
         'district' => \Hasyirin\Address\Models\District::class,
         'subdistrict' => \Hasyirin\Address\Models\Subdistrict::class,
         'post-office' => \Hasyirin\Address\Models\PostOffice::class,
+        'postcode' => \Hasyirin\Address\Models\Postcode::class,
     ],
 
     // Override table names
@@ -251,6 +282,7 @@ return [
         'districts' => 'districts',
         'subdistricts' => 'subdistricts',
         'post_offices' => 'post_offices',
+        'postcodes' => 'postcodes',
     ],
 ];
 ```
@@ -264,7 +296,8 @@ Country
  └── State
       ├── District
       │    └── Subdistrict
-      └── Post Office (with postcodes)
+      └── Post Office
+           └── Postcode
 ```
 
 Each `Address` optionally belongs to a `Country`, `State`, and `PostOffice`, and is polymorphically attached to any model via the `addressable` morph relationship.
@@ -277,7 +310,8 @@ Each `Address` optionally belongs to a `Country`, `State`, and `PostOffice`, and
 | `State`       | `code`, `name`, belongs to `Country`                                                |
 | `District`    | `code`, `name`, belongs to `State`                                                  |
 | `Subdistrict` | `code`, `name`, belongs to `District`                                               |
-| `PostOffice`  | `name`, `postcodes` (JSON array), belongs to `State`                                |
+| `PostOffice`  | `name`, belongs to `State`, has many `Postcode`                                     |
+| `Postcode`    | `code`, `latitude`, `longitude`, belongs to `PostOffice`                            |
 | `Address`     | `type`, `line_1`-`line_3`, `postcode`, `latitude`, `longitude`, `properties` (JSON) |
 
 All models use soft deletes.
