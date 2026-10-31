@@ -2,8 +2,6 @@
 
 The package code is under the MIT license. The files in this directory keep the licenses of their sources.
 
-The post office files were converted from their source. The commits that added the other files did not record a source, so those sources come from comparing the files with public datasets in November 2026.
-
 ## Post offices and postcodes
 
 The files `countries/MYS/states/*/post-offices.json` come from [AsyrafHussin/malaysia-postcodes](https://github.com/AsyrafHussin/malaysia-postcodes), commit `842ca633a72571d8b1cc7e445eefd536cb773f19` (2026-03-06).
@@ -38,7 +36,7 @@ SOFTWARE.
 
 ## Countries
 
-`countries.json` matches `all/all.json` from [lukes/ISO-3166-Countries-with-Regional-Codes](https://github.com/lukes/ISO-3166-Countries-with-Regional-Codes) by Luke Duncalfe, commit `99cdae15c839bb4f94a23db4e47b4a4c590dec61` (2024-06-19). It has the same 249 rows in the same order.
+`countries.json` matches `all/all.json` from [lukes/ISO-3166-Countries-with-Regional-Codes](https://github.com/lukes/ISO-3166-Countries-with-Regional-Codes) by Luke Duncalfe, commit `99cdae15c839bb4f94a23db4e47b4a4c590dec61` (2024-06-19). It has the same 249 rows in the same order. The commit that added the file did not record its source.
 
 It differs from the source in one way: it keeps only the `name`, `alpha-2`, and `alpha-3` columns, renamed to `name`, `alpha_2`, and `code`.
 
@@ -50,7 +48,7 @@ It differs from the source in one way: it keeps only the `name`, `alpha-2`, and 
 
 ## Districts and subdistricts
 
-The `districts.json` files and the Negeri Sembilan `subdistricts.json` files match [lomotech/jajahan](https://github.com/lomotech/jajahan) by Muhammad Syafiq Zainuddin, commit `32eeb1efc3828bafe9b2bf448773913a29a74bab` (2025-05-02). That project takes its data from the Malaysian public sector data dictionary (SDDSA), the Department of Statistics Malaysia, and the Sabah state government.
+The `districts.json` files and the Negeri Sembilan `subdistricts.json` files come from [lomotech/jajahan](https://github.com/lomotech/jajahan) by Muhammad Syafiq Zainuddin. They were compared with its commit `32eeb1efc3828bafe9b2bf448773913a29a74bab` (2025-05-02). That project takes its data from the Malaysian public sector data dictionary (SDDSA), the Department of Statistics Malaysia, and the Sabah state government.
 
 All 126 districts and all 160 Negeri Sembilan subdistricts use the same codes as the source. They differ from the source in these ways:
 
@@ -61,4 +59,4 @@ All 126 districts and all 160 Negeri Sembilan subdistricts use the same codes as
 
 The source is licensed under the Apache License 2.0. `LICENSE-APACHE-2.0.txt` holds the license text.
 
-The source of the 13 Kemaman subdistricts in `countries/MYS/states/11/districts/03/subdistricts.json` is not known. They use other codes than the source above.
+The package author added the 13 Kemaman subdistricts in `countries/MYS/states/11/districts/03/subdistricts.json` by hand. They use other codes than the source above, and they are under the package's MIT license.
