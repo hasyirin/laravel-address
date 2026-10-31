@@ -2,6 +2,57 @@
 
 All notable changes to `laravel-address` will be documented in this file.
 
+## v5.0.0
+
+### Breaking
+
+- Laravel 13.35 or later is now required. Laravel 12 is no longer supported
+- `address(string|UnitEnum $type = 'primary')` replaces `getAddress()`, and `Addressable` changes to match. `$user->address` still returns the primary address, and `$user->address('billing')->first()` returns another type
+- `render()` is removed. Use `lines()` in a Blade loop, or `formatted()`
+- `formatted()` takes `$separator` as its first parameter
+- Postcode and town are now one part, joined by a space: `40000 Shah Alam`
+- `addressable_type` and `addressable_id` are no longer mass assignable. Set the owner through the relation
+- `Address` relations now include soft-deleted places
+- `local()` now keeps its result for one request or queue job. The shared cache, its keys, and `localityDescendants()` are removed. A model that uses `HasLocality` directly must implement `localityLevels()`
+- Postcodes move to a `Postcode` model. `post_offices.postcodes` is gone, and `$postOffice->postcodes` is a `HasMany`. The data files keep their shape
+- `address:seed` reads from and publishes to `database/data/address` instead of `data`
+- `address:seed` no longer fires model events, and the protected `SeedCommand::seed()` has a new signature
+- The migrations changed: new `addresses.district_id` and `addresses.subdistrict_id` columns, a new `postcodes` table, and a new unique index on `post_offices (state_id, name)`. The index also covers soft-deleted rows, so an app restores a trashed post office instead of creating a new one with the same name
+- The bundled post office data is refreshed from AsyrafHussin/malaysia-postcodes: 16 invalid postcodes are removed and 5 are added; 5 towns are renamed, 1 is merged into another, 2 are removed, and 5 are added
+
+### Added
+
+- `Address::lines()`, which returns the non-empty parts of an address as a list
+- `Address::district()` and `Address::subdistrict()`
+- The `Postcode` model, with nullable `latitude` and `longitude`, and a `code` that is squished and uppercased
+- `address()` accepts an enum as the address type
+- `data/NOTICE.md`, which lists the data sources and ships the MIT notice of the postcode data
+
+### Fixed
+
+- Saves of `Country`, `State`, and `District` no longer use the cache store, so a cache outage no longer breaks them
+- `local()` no longer uses a shared cache, so a rollback or another request cannot leave a stale row. A `local()` call during a save no longer keeps the old row
+- A subclass and its base model now share one `local()` result, and two tenant databases no longer do
+- `ofType()` now qualifies its column, so it works in joins, and binds enum values as strings, so an int-backed enum no longer matches every type on MySQL
+- `formatted()` no longer keeps parts that are empty after cleaning
+- A line or postcode that is blank after normalizing is stored as `null`, `postcode` is squished and uppercased, and a line no longer keeps a space before a stripped comma: `"No. 1 ,"` is stored as `"No. 1"`
+- `address:seed` runs in one transaction, so a failure writes nothing. It compares each level with the database first, so a re-seed of unchanged data takes 6 reads and writes nothing, `updated_at` keeps its meaning, and no ids are used up. A first seed takes 33 queries instead of about 2,000
+- `address:seed` and the `Address` relations work for configured models without `SoftDeletes`
+- `address:seed` keeps columns that an app adds, accepts rows without optional keys, keeps the last of two rows with the same key, and names the file when a row has no key
+- Locality codes written as integers now match the same rows on every database
+- `local()` runs no query when the code of its level or of a parent level is `null`
+
+### Changed
+
+- CI runs on MySQL 8.4, MariaDB 11.4, and PostgreSQL 17 next to SQLite, with foreign keys on, and no longer runs Laravel 12 jobs
+- `address:seed` prints the rows read and written per level
+- `SECURITY.md` points to GitHub's private vulnerability reporting
+- `PostOfficeFactory` draws unique names
+
+### Removed
+
+- `.github/FUNDING.yml`
+
 ## v4.1.0
 
 ### Security
