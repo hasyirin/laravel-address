@@ -26,7 +26,7 @@ All notable changes to `laravel-address` will be documented in this file.
 - `Address::district()` and `Address::subdistrict()`
 - The `Postcode` model, with nullable `latitude` and `longitude`, and a `code` that is squished and uppercased
 - `address()` accepts an enum as the address type
-- `data/NOTICE.md`, which lists the data sources and ships the MIT notice of the postcode data
+- `data/NOTICE.md`, which lists the data sources and their licenses. `data/countries.json` is under CC BY-SA 4.0, and the district and subdistrict data follows an Apache 2.0 source
 
 ### Fixed
 

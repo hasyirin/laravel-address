@@ -366,8 +366,12 @@ Please review [our security policy](../../security/policy) on how to report secu
 
 - [Hasyirin Fakhriy](https://github.com/hasyirin)
 - [Asyraf Hussin](https://github.com/AsyrafHussin), for the [Malaysian postcode data](https://github.com/AsyrafHussin/malaysia-postcodes)
+- [Luke Duncalfe](https://github.com/lukes), for the [country data](https://github.com/lukes/ISO-3166-Countries-with-Regional-Codes)
+- [Muhammad Syafiq Zainuddin](https://github.com/lomotech), for the [district and subdistrict data](https://github.com/lomotech/jajahan)
 - [All Contributors](../../contributors)
 
 ## License
 
 The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
+
+The bundled data keeps the licenses of its sources. In particular, `data/countries.json` is under CC BY-SA 4.0. See `data/NOTICE.md`.
