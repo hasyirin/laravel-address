@@ -6,7 +6,9 @@ use Hasyirin\Address\Models\District;
 use Hasyirin\Address\Models\PostOffice;
 use Hasyirin\Address\Models\State;
 use Hasyirin\Address\Models\Subdistrict;
+use Hasyirin\Address\Tests\Fixtures\AddressType;
 use Hasyirin\Address\Tests\Fixtures\EncryptedAddress;
+use Hasyirin\Address\Tests\Fixtures\Floor;
 use Hasyirin\Address\Tests\Fixtures\PlainCountry;
 use Hasyirin\Address\Tests\Fixtures\User;
 use Illuminate\Database\Eloquent\MissingAttributeException;
@@ -490,6 +492,17 @@ it('scopes addresses by type array', function () {
         ->create(['type' => 'shipping']);
 
     expect(Address::ofType(['primary', 'billing'])->count())->toBe(2);
+});
+
+it('scopes by type in a query that joins addresses', function () {
+    Address::factory()->for($this->user, 'addressable')->create(['type' => 'primary']);
+
+    expect(Address::query()->join('addresses as other', 'other.id', '=', 'addresses.id')->ofType('primary')->count())->toBe(1);
+});
+
+it('binds enum types as strings', function () {
+    expect(Address::ofType(Floor::Ground)->getBindings())->toBe(['0'])
+        ->and(Address::ofType([AddressType::Billing, 'primary'])->getBindings())->toBe(['billing', 'primary']);
 });
 
 // -- soft deletes --

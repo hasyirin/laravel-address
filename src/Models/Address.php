@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Stringable;
 use UnitEnum;
 
+use function Illuminate\Support\enum_value;
+
 /**
  * @property int $id
  * @property string $addressable_type
@@ -132,7 +134,7 @@ class Address extends Model
 
     public function scopeOfType(Builder $query, Arrayable|BackedEnum|UnitEnum|array|string $type): void
     {
-        $query->whereIn('type', collect($type));
+        $query->whereIn($query->qualifyColumn('type'), collect($type)->map(fn (mixed $value) => (string) enum_value($value)));
     }
 
     /**

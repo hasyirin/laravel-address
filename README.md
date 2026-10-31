@@ -79,7 +79,7 @@ class User extends Model implements Addressable
 
 ### Creating Addresses
 
-The `address()` and `getAddress()` relations set `type` for you when you call `create()`, `make()`, or `save()` on them (`forceCreate()` needs Laravel 13.35 or later):
+`address()` takes the address type, `primary` by default, as a string or an enum. It sets `type` for you when you call `create()`, `make()`, `save()`, or `forceCreate()` on it:
 
 ```php
 $user->address()->create([
@@ -95,7 +95,7 @@ $user->address()->create([
     'properties' => ['notes' => 'Front gate access'],
 ]);
 
-$user->getAddress('billing')->create([
+$user->address('billing')->create([
     'line_1' => '456 Side Street',
     'postcode' => '50000',
 ]);
@@ -127,7 +127,7 @@ $user->address;
 $user->addresses;
 
 // Address by type
-$user->getAddress('billing')->first();
+$user->address('billing')->first();
 ```
 
 ### Querying by Type
@@ -139,6 +139,7 @@ use Hasyirin\Address\Models\Address;
 
 Address::ofType('shipping')->get();
 Address::ofType(['billing', 'shipping'])->get();
+Address::ofType(AddressType::Billing)->get();
 ```
 
 ### Formatting
