@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Stringable;
 use UnitEnum;
 
 /**
@@ -89,8 +90,12 @@ class Address extends Model
         static::saving(function (self $address) {
             foreach (['line_1', 'line_2', 'line_3'] as $line) {
                 if ($address->isDirty($line) && $address->{$line} !== null) {
-                    $address->{$line} = (string) str($address->{$line})->squish()->rtrim(',');
+                    $address->{$line} = static::blankToNull(str($address->{$line})->squish()->rtrim(', '));
                 }
+            }
+
+            if ($address->isDirty('postcode') && $address->postcode !== null) {
+                $address->postcode = static::blankToNull(str($address->postcode)->squish()->upper());
             }
         });
     }
@@ -130,53 +135,39 @@ class Address extends Model
         $query->whereIn('type', collect($type));
     }
 
-    public function formatted(bool $state = true, bool $country = true, bool $capitalize = false): string
+    /**
+     * @return list<string>
+     */
+    public function lines(bool $state = true, bool $country = true, bool $capitalize = false): array
     {
-        $address = collect([
+        $clean = fn (?string $value) => (string) str($value)->trim()->rtrim(', ');
+        $filled = fn (array $parts) => array_values(array_filter(array_map($clean, $parts), fn (string $part) => $part !== ''));
+
+        $lines = $filled([
             $this->line_1,
             $this->line_2,
             $this->line_3,
-            $this->postcode,
-            $this->postOffice?->name,
+            implode(' ', $filled([$this->postcode, $this->postOffice?->name])),
             $state ? $this->state?->name : null,
             $country ? $this->country?->name : null,
-        ])->filter()
-            ->map(fn (string $value) => (string) str($value)->rtrim(',')->trim())
-            ->join(', ');
+        ]);
 
-        if ($capitalize) {
-            $address = mb_strtoupper($address);
-        }
-
-        return $address;
+        return $capitalize ? array_map(mb_strtoupper(...), $lines) : $lines;
     }
 
-    public function render(bool $inline = false, bool $state = true, bool $country = true, bool $capitalize = false, int $margin = 0): string
+    public function formatted(string $separator = ', ', bool $state = true, bool $country = true, bool $capitalize = false): string
     {
-        $address = collect([
-            [$this->line_1],
-            [$this->line_2],
-            [$this->line_3],
-            [$this->postcode, $this->postOffice?->name],
-            $state ? [$this->state?->name] : [],
-            $country ? [$this->country?->name] : [],
-        ])->map(fn (array $line) => collect($line)
-            ->filter()
-            ->map(fn ($line) => (string) str($line)->rtrim(',')->trim()->when($capitalize, fn ($line) => $line->upper()))
-            ->filter()
-            ->join(', ')
-        )->filter()
-            ->map(fn (string $line) => ($inline) ? "$line," : "<p class=\"mb-{$margin}\">".e($line).',</p>')
-            ->join("\n");
-
-        return ($inline)
-            ? str($address)->rtrim(',')
-            : (string) str($address)->replaceEnd(',</p>', '</p>');
+        return implode($separator, $this->lines($state, $country, $capitalize));
     }
 
     public function copy(): self
     {
         return $this->replicate(['addressable_type', 'addressable_id', 'type', $this->getDeletedAtColumn()])
             ->unsetRelation('addressable');
+    }
+
+    protected static function blankToNull(Stringable $value): ?string
+    {
+        return $value->isEmpty() ? null : $value->toString();
     }
 }

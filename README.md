@@ -144,32 +144,36 @@ Address::ofType(['billing', 'shipping'])->get();
 ### Formatting
 
 ```php
-// Single-line comma-separated string
+// The non-empty parts of the address as a list
+$address->lines();
+// ['123 Main Street', 'Suite 4B', 'Taman Example', '50000 Kuala Lumpur', 'Selangor', 'Malaysia']
+
+// The same parts as one string, comma-separated by default
 $address->formatted();
-// "123 Main Street, Suite 4B, Taman Example, 50000, Kuala Lumpur, Selangor, Malaysia"
+// "123 Main Street, Suite 4B, Taman Example, 50000 Kuala Lumpur, Selangor, Malaysia"
+
+// Another separator
+$address->formatted("\n");
 
 // Exclude state or country
-$address->formatted(state: false);
+$address->lines(state: false);
 $address->formatted(country: false);
 
 // Uppercase
 $address->formatted(capitalize: true);
 ```
 
-### HTML Rendering
+Both return plain text. To show an address on several lines in Blade, loop over `lines()`, so that Blade escapes each value:
 
-```php
-// Multi-line with <p> tags
-$address->render();
-
-// Inline comma-separated
-$address->render(inline: true);
-
-// With options
-$address->render(state: false, country: false, capitalize: true, margin: 1);
+```blade
+@foreach ($address->lines() as $line)
+    <p>{{ $line }}</p>
+@endforeach
 ```
 
-The block output is HTML with every value escaped, so you can output it in Blade with `{!! $address->render() !!}`. The inline output and `formatted()` are plain text; output them with `{{ }}`.
+Eager load `postOffice`, `state`, and `country` before you format many addresses.
+
+When an address is saved, each line is squished and loses its trailing commas, and `postcode` is squished and uppercased. A line or postcode that ends up blank is stored as `null`. Normalize request input the same way before validation, for example in `prepareForValidation()`.
 
 ### Copying an Address
 
