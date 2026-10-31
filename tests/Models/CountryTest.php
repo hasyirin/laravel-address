@@ -1,6 +1,5 @@
 <?php
 
-use Hasyirin\Address\Models\Address;
 use Hasyirin\Address\Models\Country;
 use Hasyirin\Address\Models\District;
 use Hasyirin\Address\Models\PostOffice;
@@ -70,7 +69,7 @@ it('memoizes local() within a request and invalidates on save', function () {
 
     expect(Country::local()?->code)->toBe('MYS');
 
-    // Bypass model events so the saved listener does not fire — cache stays warm.
+    // Bypass model events so no listener fires — cache stays warm.
     DB::table('countries')->where('id', $mys->id)->update(['code' => 'XXX']);
 
     expect(Country::local()?->code)->toBe('MYS');
@@ -80,37 +79,8 @@ it('memoizes local() within a request and invalidates on save', function () {
     expect(Country::local())->toBeNull();
 });
 
-it('caches local() across requests as a serialization-safe snapshot', function () {
-    // Regression: local() cached the Eloquent model itself, which a persistent
-    // store (e.g. redis) serializes and returns as __PHP_Incomplete_Class on a
-    // later request. It must persist the raw attributes instead, then rehydrate.
-    config([
-        'cache.stores.persistent' => ['driver' => 'array', 'serialize' => true],
-        'cache.serializable_classes' => false,
-        'cache.default' => 'persistent',
-        'address.locality.country' => 'MYS',
-    ]);
-    Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
-
-    expect(Country::local())->toBeInstanceOf(Country::class)
-        ->and(Country::local()->code)->toBe('MYS');
-
-    // Persisted for later requests, but as a plain attributes array — never a
-    // serialized model (which would come back as __PHP_Incomplete_Class).
-    app()->forgetScopedInstances();
-    DB::enableQueryLog();
-
-    expect(Country::local())->toBeInstanceOf(Country::class)
-        ->code->toBe('MYS')
-        ->and(DB::getQueryLog())->toBe([]);
-});
-
 it('follows a locality config change on a later request', function () {
-    config([
-        'cache.stores.persistent' => ['driver' => 'array', 'serialize' => true],
-        'cache.default' => 'persistent',
-        'address.locality.country' => 'MYS',
-    ]);
+    config(['address.locality.country' => 'MYS']);
     Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
     Country::create(['code' => 'SGP', 'name' => 'Singapore']);
 
@@ -122,40 +92,8 @@ it('follows a locality config change on a later request', function () {
     expect(Country::local()?->code)->toBe('SGP');
 });
 
-it('ignores a local() value cached by an older version', function () {
-    config([
-        'cache.stores.persistent' => ['driver' => 'array', 'serialize' => true],
-        'cache.default' => 'persistent',
-        'address.locality.country' => 'MYS',
-    ]);
-    $mys = Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
-
-    cache()->forever('address.locality.'.Country::class, $mys->fresh());
-    app()->forgetScopedInstances();
-
-    expect($mys->is(Country::local()))->toBeTrue();
-});
-
-it('ignores local() attributes cached by an older version', function () {
-    config([
-        'cache.stores.persistent' => ['driver' => 'array', 'serialize' => true],
-        'cache.default' => 'persistent',
-        'address.locality.country' => 'MYS',
-    ]);
-    $mys = Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
-
-    cache()->forever('address.locality.'.Country::class, [...$mys->getAttributes(), 'name' => 'Old Name']);
-    app()->forgetScopedInstances();
-
-    expect(Country::local()?->name)->toBe('Malaysia');
-});
-
-it('clears the cached local() when the row changes under another locality config', function () {
-    config([
-        'cache.stores.persistent' => ['driver' => 'array', 'serialize' => true],
-        'cache.default' => 'persistent',
-        'address.locality.country' => 'MYS',
-    ]);
+it('clears the memo when the row changes under another locality config', function () {
+    config(['address.locality.country' => 'MYS']);
     $mys = Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
 
     expect(Country::local()?->name)->toBe('Malaysia');
@@ -164,7 +102,6 @@ it('clears the cached local() when the row changes under another locality config
     $mys->update(['name' => 'Malaysia Baru']);
 
     config(['address.locality.country' => 'MYS']);
-    app()->forgetScopedInstances();
 
     expect(Country::local()?->name)->toBe('Malaysia Baru');
 });
@@ -222,7 +159,7 @@ it('has many districts through states', function () {
 it('has many post offices through states', function () {
     $country = Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
     $state = State::create(['country_id' => $country->id, 'code' => '10', 'name' => 'Selangor']);
-    PostOffice::create(['state_id' => $state->id, 'name' => 'Shah Alam', 'postcodes' => ['40000']]);
+    PostOffice::create(['state_id' => $state->id, 'name' => 'Shah Alam']);
 
     expect($country->postOffices)->toHaveCount(1)
         ->first()->name->toBe('Shah Alam');
@@ -232,9 +169,7 @@ it('has many addresses', function () {
     $country = Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
     $user = User::create(['name' => 'Test']);
 
-    Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $user->id,
+    $user->addresses()->create([
         'country_id' => $country->id,
         'type' => 'primary',
     ]);
@@ -248,10 +183,8 @@ it('resolves its relations when the country model has another class name', funct
     $nation = Nation::create(['code' => 'MYS', 'name' => 'Malaysia']);
     $state = State::create(['country_id' => $nation->id, 'code' => '10', 'name' => 'Selangor']);
     District::create(['state_id' => $state->id, 'code' => '01', 'name' => 'Petaling']);
-    PostOffice::create(['state_id' => $state->id, 'name' => 'Shah Alam', 'postcodes' => ['40000']]);
-    Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => User::create(['name' => 'Test'])->id,
+    PostOffice::create(['state_id' => $state->id, 'name' => 'Shah Alam']);
+    User::create(['name' => 'Test'])->addresses()->create([
         'country_id' => $nation->id,
         'type' => 'primary',
     ]);

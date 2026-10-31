@@ -67,15 +67,15 @@ class State extends Model implements Localizable
 
     public function scopeLocal(Builder $query): void
     {
-        $query->where($query->qualifyColumn('code'), config('address.locality.state'))
-            ->whereHas('country', fn (Builder $q) => $q->where('code', config('address.locality.country')));
+        $query->where($query->qualifyColumn('code'), static::localityCode('state'))
+            ->whereHas('country', fn (Builder $q) => $q->where('code', static::localityCode('country')));
     }
 
     /**
-     * @return array<int, class-string>
+     * @return array<int, string>
      */
-    protected static function localityDescendants(): array
+    protected static function localityLevels(): array
     {
-        return [config('address.models.district')];
+        return ['country', 'state'];
     }
 }

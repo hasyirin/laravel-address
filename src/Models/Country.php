@@ -68,14 +68,14 @@ class Country extends Model implements Localizable
 
     public function scopeLocal(Builder $query): void
     {
-        $query->where($query->qualifyColumn('code'), config('address.locality.country'));
+        $query->where($query->qualifyColumn('code'), static::localityCode('country'));
     }
 
     /**
-     * @return array<int, class-string>
+     * @return array<int, string>
      */
-    protected static function localityDescendants(): array
+    protected static function localityLevels(): array
     {
-        return [config('address.models.state')];
+        return ['country'];
     }
 }

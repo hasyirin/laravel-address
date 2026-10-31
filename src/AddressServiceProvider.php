@@ -2,6 +2,7 @@
 
 namespace Hasyirin\Address;
 
+use ArrayObject;
 use Hasyirin\Address\Commands\SeedCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -17,6 +18,7 @@ class AddressServiceProvider extends PackageServiceProvider
                 'create_countries_table',
                 'create_states_table',
                 'create_post_offices_table',
+                'create_postcodes_table',
                 'create_districts_table',
                 'create_subdistricts_table',
                 'create_addresses_table',
@@ -26,10 +28,15 @@ class AddressServiceProvider extends PackageServiceProvider
             ]);
     }
 
+    public function packageRegistered(): void
+    {
+        $this->app->scoped('address.locality', fn () => new ArrayObject);
+    }
+
     public function packageBooted(): void
     {
         $this->publishes([
-            $this->package->basePath('/../data') => base_path('data'),
+            $this->package->basePath('/../data') => database_path('data/address'),
         ], "{$this->package->shortName()}-data");
     }
 }

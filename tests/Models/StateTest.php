@@ -1,6 +1,5 @@
 <?php
 
-use Hasyirin\Address\Models\Address;
 use Hasyirin\Address\Models\Country;
 use Hasyirin\Address\Models\District;
 use Hasyirin\Address\Models\PostOffice;
@@ -114,7 +113,7 @@ it('has many districts', function () {
 
 it('has many post offices', function () {
     $state = State::create(['country_id' => $this->country->id, 'code' => '10', 'name' => 'Selangor']);
-    PostOffice::create(['state_id' => $state->id, 'name' => 'Shah Alam', 'postcodes' => ['40000']]);
+    PostOffice::create(['state_id' => $state->id, 'name' => 'Shah Alam']);
 
     expect($state->postOffices)->toHaveCount(1);
 });
@@ -123,9 +122,7 @@ it('has many addresses', function () {
     $state = State::create(['country_id' => $this->country->id, 'code' => '10', 'name' => 'Selangor']);
     $user = User::create(['name' => 'Test']);
 
-    Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => $user->id,
+    $user->addresses()->create([
         'state_id' => $state->id,
         'type' => 'primary',
     ]);
@@ -138,10 +135,8 @@ it('resolves its relations when the state model has another class name', functio
 
     $province = Province::create(['country_id' => $this->country->id, 'code' => '10', 'name' => 'Selangor']);
     District::create(['state_id' => $province->id, 'code' => '01', 'name' => 'Petaling']);
-    PostOffice::create(['state_id' => $province->id, 'name' => 'Shah Alam', 'postcodes' => ['40000']]);
-    Address::create([
-        'addressable_type' => User::class,
-        'addressable_id' => User::create(['name' => 'Test'])->id,
+    PostOffice::create(['state_id' => $province->id, 'name' => 'Shah Alam']);
+    User::create(['name' => 'Test'])->addresses()->create([
         'state_id' => $province->id,
         'type' => 'primary',
     ]);

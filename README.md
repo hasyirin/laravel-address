@@ -5,14 +5,14 @@
 [![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/hasyirin/laravel-address/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/hasyirin/laravel-address/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/hasyirin/laravel-address.svg?style=flat-square)](https://packagist.org/packages/hasyirin/laravel-address)
 
-A Laravel package for managing addresses with polymorphic relationships and hierarchical geographical data (countries, states, districts, subdistricts, and post offices).
+A Laravel package for managing addresses with polymorphic relationships and hierarchical geographical data (countries, states, districts, subdistricts, post offices, and postcodes).
 
 Comes with built-in geographical data for Malaysia and a seeder command to populate reference tables.
 
 ## Requirements
 
 - PHP 8.4+
-- Laravel 12.9+ or 13
+- Laravel 13.35+
 
 ## Installation
 
@@ -37,15 +37,21 @@ php artisan vendor:publish --tag="address-config"
 
 ## Seeding Geographical Data
 
-Seed countries, states, districts, subdistricts, and post offices:
+Seed countries, states, districts, subdistricts, post offices, and postcodes:
 
 ```bash
 php artisan address:seed
 ```
 
-The command matches existing rows by code (post offices by name), so you can run it again to apply data updates. Soft-deleted rows are updated but stay deleted. It follows the files down from `countries.json` and reads each level only for the parents listed in the level above.
+The command runs in one transaction, so a failure writes nothing. It compares each level with the database and writes only new or changed rows, so you can run it again to apply data updates, and a re-seed of unchanged data writes nothing. It follows the files down from `countries.json` and reads each level only for the parents listed in the level above.
 
-The bundled subdistrict data is partial: it covers Negeri Sembilan and the Kemaman district of Terengganu.
+Rows match on code. Post offices match by name within a state. Matching is exact on PostgreSQL and SQLite, and ignores case on MySQL and MariaDB.
+
+Soft-deleted rows are updated and stay deleted. The unique index also covers soft-deleted rows, so an app restores a trashed post office instead of creating a new one with the same name. The command never deletes rows, so a row that leaves the data stays in the database.
+
+Model events and observers do not run during the seed. The command clears the `local()` results of its own process when it finishes.
+
+The bundled subdistrict data is partial: it covers Negeri Sembilan and the Kemaman district of Terengganu. The post office and postcode data comes from [AsyrafHussin/malaysia-postcodes](https://github.com/AsyrafHussin/malaysia-postcodes). `data/NOTICE.md` lists the data sources and their licenses.
 
 To use your own data, publish the bundled files and edit them:
 
@@ -53,7 +59,7 @@ To use your own data, publish the bundled files and edit them:
 php artisan vendor:publish --tag="address-data"
 ```
 
-The command reads from `base_path('data')` when that directory contains `countries.json`. Otherwise, it uses the package's bundled data.
+The command reads from `database/data/address` when that directory contains `countries.json`. Otherwise, it uses the package's bundled data.
 
 ## Usage
 
@@ -73,7 +79,7 @@ class User extends Model implements Addressable
 
 ### Creating Addresses
 
-The `address()` and `getAddress()` relations set `type` for you when you call `create()`, `make()`, or `save()` on them (`forceCreate()` needs Laravel 13.35 or later):
+`address()` takes the address type, `primary` by default, as a string or an enum. It sets `type` for you when you call `create()`, `make()`, `save()`, or `forceCreate()` on it:
 
 ```php
 $user->address()->create([
@@ -89,7 +95,7 @@ $user->address()->create([
     'properties' => ['notes' => 'Front gate access'],
 ]);
 
-$user->getAddress('billing')->create([
+$user->address('billing')->create([
     'line_1' => '456 Side Street',
     'postcode' => '50000',
 ]);
@@ -121,7 +127,7 @@ $user->address;
 $user->addresses;
 
 // Address by type
-$user->getAddress('billing')->first();
+$user->address('billing')->first();
 ```
 
 ### Querying by Type
@@ -133,37 +139,42 @@ use Hasyirin\Address\Models\Address;
 
 Address::ofType('shipping')->get();
 Address::ofType(['billing', 'shipping'])->get();
+Address::ofType(AddressType::Billing)->get();
 ```
 
 ### Formatting
 
 ```php
-// Single-line comma-separated string
+// The non-empty parts of the address as a list
+$address->lines();
+// ['123 Main Street', 'Suite 4B', 'Taman Example', '50000 Kuala Lumpur', 'Selangor', 'Malaysia']
+
+// The same parts as one string, comma-separated by default
 $address->formatted();
-// "123 Main Street, Suite 4B, Taman Example, 50000, Kuala Lumpur, Selangor, Malaysia"
+// "123 Main Street, Suite 4B, Taman Example, 50000 Kuala Lumpur, Selangor, Malaysia"
+
+// Another separator
+$address->formatted("\n");
 
 // Exclude state or country
-$address->formatted(state: false);
+$address->lines(state: false);
 $address->formatted(country: false);
 
 // Uppercase
 $address->formatted(capitalize: true);
 ```
 
-### HTML Rendering
+Both return plain text. To show an address on several lines in Blade, loop over `lines()`, so that Blade escapes each value:
 
-```php
-// Multi-line with <p> tags
-$address->render();
-
-// Inline comma-separated
-$address->render(inline: true);
-
-// With options
-$address->render(state: false, country: false, capitalize: true, margin: 1);
+```blade
+@foreach ($address->lines() as $line)
+    <p>{{ $line }}</p>
+@endforeach
 ```
 
-The block output is HTML with every value escaped, so you can output it in Blade with `{!! $address->render() !!}`. The inline output and `formatted()` are plain text; output them with `{{ }}`.
+Eager load `postOffice`, `state`, and `country` before you format many addresses.
+
+When an address is saved, each line is squished and loses its trailing commas, and `postcode` is squished and uppercased. A line or postcode that ends up blank is stored as `null`. Normalize request input the same way before validation, for example in `prepareForValidation()`.
 
 ### Copying an Address
 
@@ -204,10 +215,46 @@ Compose with the `local()` query scope:
 District::query()->local()->where(...)->get();
 ```
 
-The result is cached forever in your default cache store and memoized per request via `cache()->memo()`. The cached entry records the locality codes it was resolved for, so a config change takes effect immediately. A miss is never cached. `saved` and `deleted` listeners on each model cascade-clear caches down the chain (`Country` save clears `State` and `District` caches too). Writes that skip model events, such as query builder updates, `upsert()`, or `saveQuietly()`, do not clear the cache. For manual invalidation:
+`local()` keeps its result for the current request or queue job, and Laravel discards it after each one. The result is kept per configured codes, connection, and database, so a config change or a tenant switch resolves the row again. When the code of a level or of a parent level is `null`, `local()` returns `null` without a query. A configured code with no row is never kept, so it runs one query per call.
+
+Any Eloquent save, delete, `increment()`, or `decrement()` of a `Country`, `State`, or `District` clears the kept results, and so does a rollback of a transaction that saved one. `address:seed` clears them too. Long-running processes, such as commands and daemons, keep a result until they save one of these models or call `clearLocalCache()`.
+
+Writes that skip model events, such as query builder updates, `upsert()`, or `saveQuietly()`, do not clear the kept results. If the same request reads `local()` after such a write, clear them first:
 
 ```php
 Country::clearLocalCache();
+```
+
+## Postcodes
+
+Each `PostOffice` has many `Postcode` rows. One postcode can belong to more than one post office, because a postcode can cover more than one town.
+
+Find the post office and state of a postcode:
+
+```php
+use Hasyirin\Address\Models\Postcode;
+
+Postcode::query()->where('code', '50000')->with('postOffice.state.country')->get();
+```
+
+Validate that a postcode belongs to a post office:
+
+```php
+use Illuminate\Validation\Rule;
+
+Rule::exists(config('address.models.postcode'), 'code')
+    ->where('post_office_id', $postOfficeId)
+    ->withoutTrashed();
+```
+
+This rule checks the postcode only. A postcode stays active when its post office is soft-deleted, so validate `post_office_id` with its own rule, for example `Rule::exists(config('address.models.post-office'), 'id')->withoutTrashed()`.
+
+`Postcode::code` is squished and uppercased when it is set. `latitude` and `longitude` are empty until your app fills them. Geocoding an address stays your app's job; store the result in `latitude` and `longitude` on the `Address`.
+
+The unique index on `post_office_id` and `code` also covers soft-deleted rows. To bring back a trashed postcode, restore it instead of creating it again:
+
+```php
+Postcode::withTrashed()->where('post_office_id', $postOfficeId)->where('code', '50000')->restore();
 ```
 
 ## Configuration
@@ -231,6 +278,7 @@ return [
         'district' => \Hasyirin\Address\Models\District::class,
         'subdistrict' => \Hasyirin\Address\Models\Subdistrict::class,
         'post-office' => \Hasyirin\Address\Models\PostOffice::class,
+        'postcode' => \Hasyirin\Address\Models\Postcode::class,
     ],
 
     // Override table names
@@ -241,6 +289,7 @@ return [
         'districts' => 'districts',
         'subdistricts' => 'subdistricts',
         'post_offices' => 'post_offices',
+        'postcodes' => 'postcodes',
     ],
 ];
 ```
@@ -254,21 +303,27 @@ Country
  └── State
       ├── District
       │    └── Subdistrict
-      └── Post Office (with postcodes)
+      └── Post Office
+           └── Postcode
 ```
 
-Each `Address` optionally belongs to a `Country`, `State`, and `PostOffice`, and is polymorphically attached to any model via the `addressable` morph relationship.
+Each `Address` optionally belongs to a `Country`, `State`, `District`, `Subdistrict`, and `PostOffice`, and is polymorphically attached to any model via the `addressable` morph relationship. These relations include soft-deleted places, so a retired post office still shows on old addresses. `whereHas()` and `has()` on these relations include them too. To leave them out, add `withoutTrashed()`:
+
+```php
+Address::whereHas('postOffice', fn ($query) => $query->withoutTrashed())->get();
+```
 
 ## Models
 
-| Model         | Key Fields                                                                          |
-|---------------|-------------------------------------------------------------------------------------|
-| `Country`     | `code` (ISO 3166-1 alpha-3), `alpha_2`, `name`                                      |
-| `State`       | `code`, `name`, belongs to `Country`                                                |
-| `District`    | `code`, `name`, belongs to `State`                                                  |
-| `Subdistrict` | `code`, `name`, belongs to `District`                                               |
-| `PostOffice`  | `name`, `postcodes` (JSON array), belongs to `State`                                |
-| `Address`     | `type`, `line_1`-`line_3`, `postcode`, `latitude`, `longitude`, `properties` (JSON) |
+| Model         | Key Fields                                                                                                                                                  |
+|---------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `Country`     | `code` (ISO 3166-1 alpha-3), `alpha_2`, `name`                                                                                                              |
+| `State`       | `code`, `name`, belongs to `Country`                                                                                                                        |
+| `District`    | `code`, `name`, belongs to `State`                                                                                                                          |
+| `Subdistrict` | `code`, `name`, belongs to `District`                                                                                                                       |
+| `PostOffice`  | `name`, belongs to `State`, has many `Postcode`                                                                                                             |
+| `Postcode`    | `code`, `latitude`, `longitude`, belongs to `PostOffice`                                                                                                    |
+| `Address`     | `type`, `line_1`-`line_3`, `postcode`, `latitude`, `longitude`, `properties` (JSON), belongs to `Country`, `State`, `District`, `Subdistrict`, `PostOffice` |
 
 All models use soft deletes.
 
@@ -310,8 +365,13 @@ Please review [our security policy](../../security/policy) on how to report secu
 ## Credits
 
 - [Hasyirin Fakhriy](https://github.com/hasyirin)
+- [Asyraf Hussin](https://github.com/AsyrafHussin), for the [Malaysian postcode data](https://github.com/AsyrafHussin/malaysia-postcodes)
+- [Luke Duncalfe](https://github.com/lukes), for the [country data](https://github.com/lukes/ISO-3166-Countries-with-Regional-Codes)
+- [Muhammad Syafiq Zainuddin](https://github.com/lomotech), for the [district and subdistrict data](https://github.com/lomotech/jajahan)
 - [All Contributors](../../contributors)
 
 ## License
 
 The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
+
+The bundled data keeps the licenses of its sources. In particular, `data/countries.json` is under CC BY-SA 4.0. See `data/NOTICE.md`.

@@ -3,6 +3,7 @@
 use Hasyirin\Address\Models\Country;
 use Hasyirin\Address\Models\PostOffice;
 use Hasyirin\Address\Models\State;
+use Illuminate\Database\UniqueConstraintViolationException;
 
 beforeEach(function () {
     $country = Country::create(['code' => 'MYS', 'name' => 'Malaysia']);
@@ -13,33 +14,10 @@ it('can create a post office', function () {
     $postOffice = PostOffice::create([
         'state_id' => $this->state->id,
         'name' => 'Shah Alam',
-        'postcodes' => ['40000', '40100'],
     ]);
 
     expect($postOffice)->toBeInstanceOf(PostOffice::class)
-        ->and($postOffice->name)->toBe('Shah Alam')
-        ->and($postOffice->postcodes)->toBe(['40000', '40100']);
-});
-
-it('casts postcodes to array', function () {
-    $postOffice = PostOffice::create([
-        'state_id' => $this->state->id,
-        'name' => 'Shah Alam',
-        'postcodes' => ['40000'],
-    ]);
-
-    $fresh = $postOffice->fresh();
-
-    expect($fresh->postcodes)->toBeArray()->toBe(['40000']);
-});
-
-it('defaults postcodes to empty array', function () {
-    $postOffice = PostOffice::create([
-        'state_id' => $this->state->id,
-        'name' => 'Shah Alam',
-    ]);
-
-    expect($postOffice->postcodes)->toBeArray()->toBe([]);
+        ->and($postOffice->name)->toBe('Shah Alam');
 });
 
 it('belongs to a state', function () {
@@ -61,4 +39,17 @@ it('supports soft deletes', function () {
 
     expect(PostOffice::count())->toBe(0)
         ->and(PostOffice::withTrashed()->count())->toBe(1);
+});
+
+it('rejects a second post office with the same name in a state', function () {
+    PostOffice::create(['state_id' => $this->state->id, 'name' => 'Shah Alam']);
+
+    expect(fn () => PostOffice::create(['state_id' => $this->state->id, 'name' => 'Shah Alam']))
+        ->toThrow(UniqueConstraintViolationException::class);
+});
+
+it('generates a unique name for every post office the factory creates in one state', function () {
+    PostOffice::factory()->count(60)->create(['state_id' => $this->state->id]);
+
+    expect(PostOffice::pluck('name')->unique())->toHaveCount(60);
 });

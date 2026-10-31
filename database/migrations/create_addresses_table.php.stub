@@ -11,6 +11,8 @@ return new class extends Migration
     protected string $table;
     protected string $countriesTable;
     protected string $statesTable;
+    protected string $districtsTable;
+    protected string $subdistrictsTable;
     protected string $postOfficesTable;
 
     public function __construct()
@@ -18,6 +20,8 @@ return new class extends Migration
         $this->table = config('address.tables.addresses');
         $this->countriesTable = config('address.tables.countries');
         $this->statesTable = config('address.tables.states');
+        $this->districtsTable = config('address.tables.districts');
+        $this->subdistrictsTable = config('address.tables.subdistricts');
         $this->postOfficesTable = config('address.tables.post_offices');
     }
 
@@ -39,6 +43,18 @@ return new class extends Migration
                 ->index()
                 ->nullable()
                 ->references('id')->on($this->statesTable)
+                ->nullOnDelete();
+
+            $table->foreignId('district_id')
+                ->index()
+                ->nullable()
+                ->references('id')->on($this->districtsTable)
+                ->nullOnDelete();
+
+            $table->foreignId('subdistrict_id')
+                ->index()
+                ->nullable()
+                ->references('id')->on($this->subdistrictsTable)
                 ->nullOnDelete();
 
             $table->foreignId('post_office_id')

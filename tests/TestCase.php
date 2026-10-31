@@ -18,10 +18,12 @@ class TestCase extends Orchestra
 
     public function getEnvironmentSetUp($app)
     {
-        config()->set('database.default', 'testing');
+        config()->set('database.default', env('DB_CONNECTION', 'testing'));
 
         // Load the package config before migrations run (migrations reference config values)
         config()->set('address', require __DIR__.'/../config/address.php');
+
+        Schema::dropAllTables();
 
         // Create a users table for polymorphic relationship testing
         Schema::create('users', function (Blueprint $table) {
@@ -35,6 +37,7 @@ class TestCase extends Orchestra
             'create_countries_table',
             'create_states_table',
             'create_post_offices_table',
+            'create_postcodes_table',
             'create_districts_table',
             'create_subdistricts_table',
             'create_addresses_table',

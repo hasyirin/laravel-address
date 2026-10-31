@@ -1,6 +1,7 @@
 <?php
 
 use Hasyirin\Address\Models\Address;
+use Hasyirin\Address\Tests\Fixtures\AddressType;
 use Hasyirin\Address\Tests\Fixtures\User;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
@@ -51,36 +52,32 @@ it('returns all addresses via addresses()', function () {
     expect($this->user->addresses)->toHaveCount(2);
 });
 
-it('returns address by type via getAddress()', function () {
-    Address::factory()
-        ->for($this->user, 'addressable')
-        ->create([
-            'type' => 'billing',
-            'line_1' => 'Billing Address',
-        ]);
+it('returns the address of the given type', function () {
+    Address::factory()->for($this->user, 'addressable')->create(['type' => 'billing', 'line_1' => 'Billing Address']);
 
-    $billing = $this->user->getAddress('billing')->first();
-
-    expect($billing)->not->toBeNull()
-        ->and($billing->line_1)->toBe('Billing Address');
+    expect($this->user->address('billing')->first()?->line_1)->toBe('Billing Address');
 });
 
-it('returns a default address with type when none exists', function () {
-    $address = $this->user->getAddress('shipping')->first();
-
-    // withDefault creates an unsaved model when no record exists
-    expect($address)->toBeNull();
-
-    // But accessing it via the dynamic property triggers withDefault
-    $address = $this->user->getAddress('shipping')->getResults();
-
-    expect($address)->toBeInstanceOf(Address::class)
-        ->and($address->exists)->toBeFalse()
-        ->and($address->type)->toBe('shipping');
+it('returns a default address of the given type', function () {
+    expect($this->user->address('shipping')->getResults())->toBeInstanceOf(Address::class)
+        ->exists->toBeFalse()
+        ->type->toBe('shipping');
 });
 
-it('sets the type when creating through getAddress()', function () {
-    $address = $this->user->getAddress('billing')->create(['line_1' => 'No. 1']);
+it('sets the type from an enum when creating', function () {
+    $address = $this->user->address(AddressType::Billing)->create(['line_1' => 'No. 1']);
+
+    expect($address->fresh()->type)->toBe('billing');
+});
+
+it('sets the type when force creating', function () {
+    $address = $this->user->address('billing')->forceCreate(['line_1' => 'No. 1']);
+
+    expect($address->fresh()->type)->toBe('billing');
+});
+
+it('sets the type when saving a model through the relation', function () {
+    $address = $this->user->address('billing')->save(new Address(['line_1' => 'No. 1']));
 
     expect($address->fresh()->type)->toBe('billing');
 });

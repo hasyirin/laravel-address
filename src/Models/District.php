@@ -56,10 +56,18 @@ class District extends Model implements Localizable
 
     public function scopeLocal(Builder $query): void
     {
-        $query->where($query->qualifyColumn('code'), config('address.locality.district'))
+        $query->where($query->qualifyColumn('code'), static::localityCode('district'))
             ->whereHas('state', function (Builder $q) {
-                $q->where('code', config('address.locality.state'))
-                    ->whereHas('country', fn (Builder $r) => $r->where('code', config('address.locality.country')));
+                $q->where('code', static::localityCode('state'))
+                    ->whereHas('country', fn (Builder $r) => $r->where('code', static::localityCode('country')));
             });
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected static function localityLevels(): array
+    {
+        return ['country', 'state', 'district'];
     }
 }
