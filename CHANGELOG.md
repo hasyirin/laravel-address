@@ -2,6 +2,13 @@
 
 All notable changes to `laravel-address` will be documented in this file.
 
+## v5.1.0
+
+### Changed
+
+- The migration stubs use `timestampsTz()` and `softDeletesTz()`. On PostgreSQL the columns are `timestamptz`, and on SQL Server `datetimeoffset`, so a value stays the same moment when the app or session time zone changes. MySQL, MariaDB, and SQLite get the same column types as before
+- Only new publishes get the change. An app that already published the v5 migrations keeps its files. To change existing columns, write your own migration
+
 ## v5.0.0
 
 ### Breaking

@@ -31,8 +31,8 @@ return new class extends Migration
             $table->string('code');
             $table->string('name');
 
-            $table->timestamps();
-            $table->softDeletes();
+            $table->timestampsTz();
+            $table->softDeletesTz();
 
             $table->unique(['country_id', 'code']);
 
