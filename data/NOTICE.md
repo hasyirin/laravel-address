@@ -34,6 +34,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
+### Postcodes from MCMC
+
+286 postcodes come from the [postcode dataset](https://data.gov.my/data-catalogue/poskod) of the Malaysian Communications and Multimedia Commission (MCMC), published on data.gov.my. The CSV was downloaded on 2026-11-03 and was last modified on 2026-08-02. Its data is as of June 2026.
+
+These rows are © MCMC and licensed under the [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/). They come with no warranty. [mcmc-postcodes.md](mcmc-postcodes.md) lists them.
+
+They are the postcodes that MCMC lists and the source above does not. They differ from the source in these ways:
+
+- Each postcode is under the town that MCMC gives.
+- 3 postcodes use the package spelling of their town: 90208 is under `Kota Kinabatangan` (MCMC: "Kota Kinbatangan"), 86207 under `Simpang Rengam` (MCMC: "Simpang Renggam"), and 26907 under `Bandar Tun Abdul Razak` (MCMC: "Bandar Tun Razak").
+- 7 towns are new: `Bario`, `Gedong`, `Kalabakan`, `Relau`, `Sematan`, `Skudai`, and `Sungai Kechil Ilir`.
+
+159 postcodes are in both sources with a different town. MCMC often gives the bigger town, not the post office, for example 31300 `Ipoh` instead of `Kampung Kepayang`. The package keeps the town of the source above for all 159. They are not yet checked against Pos Malaysia.
+
 ## Countries
 
 `countries.json` matches `all/all.json` from [lukes/ISO-3166-Countries-with-Regional-Codes](https://github.com/lukes/ISO-3166-Countries-with-Regional-Codes) by Luke Duncalfe, commit `99cdae15c839bb4f94a23db4e47b4a4c590dec61` (2024-06-19). It has the same 249 rows in the same order. The commit that added the file did not record its source.

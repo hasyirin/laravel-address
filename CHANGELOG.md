@@ -2,6 +2,15 @@
 
 All notable changes to `laravel-address` will be documented in this file.
 
+## v5.2.0
+
+### Added
+
+- 286 postcodes from the MCMC postcode dataset on data.gov.my, under CC BY 4.0. 276 join existing towns, and 3 use the package spelling of their town. 7 are in new towns: Bario, Gedong, Kalabakan, Relau, Sematan, Skudai, and Sungai Kechil Ilir. `data/NOTICE.md` and `data/mcmc-postcodes.md` record them
+- A README section on the Malaysian address format, with its sources
+
+No town is renamed or removed. 159 postcodes have a different town in MCMC. They keep their town until they are checked against Pos Malaysia.
+
 ## v5.1.0
 
 ### Changed

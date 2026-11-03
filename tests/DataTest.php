@@ -26,6 +26,22 @@ it('keeps the official spelling of Al Muktafi Billah Shah', function () {
         ->not->toContain('Al Muktatfi Billah Shah');
 });
 
+it('adds the postcodes that only MCMC lists', function (string $state, string $town, string $postcode) {
+    expect(postOfficesOf($state)->firstWhere('name', $town)['postcodes'] ?? [])->toContain($postcode);
+})->with([
+    'existing town' => ['04', 'Melaka', '75500'],
+    'new town' => ['01', 'Skudai', '81307'],
+    'package spelling of Kota Kinbatangan' => ['12', 'Kota Kinabatangan', '90208'],
+    'package spelling of Simpang Renggam' => ['01', 'Simpang Rengam', '86207'],
+    'package spelling of Bandar Tun Razak' => ['06', 'Bandar Tun Abdul Razak', '26907'],
+]);
+
+it('does not add the MCMC spellings of package towns', function () {
+    expect(postOfficesOf('12')->pluck('name'))->not->toContain('Kota Kinbatangan')
+        ->and(postOfficesOf('01')->pluck('name'))->not->toContain('Simpang Renggam')
+        ->and(postOfficesOf('06')->pluck('name'))->not->toContain('Bandar Tun Razak');
+});
+
 it('lists a shared postcode under both towns', function () {
     expect(postOfficesOf('01')->filter(fn (array $office) => in_array('84300', $office['postcodes'], true))->pluck('name')->sort()->values()->all())
         ->toBe(['Bukit Pasir', 'Muar']);

@@ -257,6 +257,32 @@ The unique index on `post_office_id` and `code` also covers soft-deleted rows. T
 Postcode::withTrashed()->where('post_office_id', $postOfficeId)->where('code', '50000')->restore();
 ```
 
+## Malaysian Address Format
+
+A Malaysian address has these lines, from top to bottom:
+
+1. Recipient
+2. House, lot, or floor number, and building
+3. Number and street, or district
+4. Postcode and town, for example `40000 Shah Alam`
+5. State, for mail from outside Malaysia
+6. Country, for mail from outside Malaysia
+
+The postcode has 5 digits and comes before the town. The first 2 digits give the delivery area, and the last 3 give the delivery office.
+
+The UPU standard calls the line after the postcode "town", with the national names "City" and "Bandar". Its value is the name of the post office that handles the mail, not the municipal name. For example, Simpang Pulai addresses use `31300 Kampung Kepayang`, not Ipoh. That is why the package calls the model `PostOffice`. In a form, label the field "City" or "Bandar".
+
+A post office near a state border can serve an area in another state. That area then uses the postcode of that post office.
+
+Sources:
+
+- [Malaysia postcode and address format](https://www.upu.int/UPU/media/upu/PostalEntitiesFiles/addressingUnit/mysEn.pdf), UPU, supplied by Pos Malaysia, February 2010
+- [S42 standardized address format for Malaysia](https://www.upu.int/UPU/media/upu/PostalEntitiesFiles/s42/mysEn.pdf), UPU, approved 2012
+- [Addresses in Malaysia](https://en.wikipedia.org/wiki/Addresses_in_Malaysia) and [Postal codes in Malaysia](https://en.wikipedia.org/wiki/Postal_codes_in_Malaysia), Wikipedia
+- [Postcode dataset](https://data.gov.my/data-catalogue/poskod), MCMC, on data.gov.my
+
+[data/NOTICE.md](data/NOTICE.md) lists where the bundled data comes from.
+
 ## Configuration
 
 ```php
@@ -366,6 +392,7 @@ Please review [our security policy](../../security/policy) on how to report secu
 
 - [Hasyirin Fakhriy](https://github.com/hasyirin)
 - [Asyraf Hussin](https://github.com/AsyrafHussin), for the [Malaysian postcode data](https://github.com/AsyrafHussin/malaysia-postcodes)
+- [Malaysian Communications and Multimedia Commission](https://data.gov.my/data-catalogue/poskod), for the [postcodes from MCMC](data/mcmc-postcodes.md), under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 - [Luke Duncalfe](https://github.com/lukes), for the [country data](https://github.com/lukes/ISO-3166-Countries-with-Regional-Codes)
 - [Muhammad Syafiq Zainuddin](https://github.com/lomotech), for the [district and subdistrict data](https://github.com/lomotech/jajahan)
 - [All Contributors](../../contributors)

@@ -1,0 +1,113 @@
+# Postcodes from MCMC
+
+These postcodes come from the [MCMC postcode dataset](https://data.gov.my/data-catalogue/poskod), © MCMC, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). [NOTICE.md](NOTICE.md) describes how the package uses them.
+
+Each line gives the state, the town in the package, and the postcodes.
+
+- Johor, Ayer Hitam: 86107
+- Johor, Ayer Tawar 2: 81927
+- Johor, Bandar Penawar: 81937
+- Johor, Batu Pahat: 83007, 83009, 83307, 83407, 86407
+- Johor, Benut: 82207
+- Johor, Gelang Patah: 81557
+- Johor, Iskandar Puteri: 79582
+- Johor, Johor Bahru: 80057, 80357, 80359, 80544, 80554, 80598, 80690, 81107, 81551, 81552, 81556
+- Johor, Kahang: 86707
+- Johor, Kluang: 86009
+- Johor, Kulai: 81007, 81009, 81447
+- Johor, Masai: 81757
+- Johor, Mersing: 86807, 86888
+- Johor, Muar: 84157, 84407
+- Johor, Pasir Gudang: 81707, 81759
+- Johor, Pekan Nenas: 81507
+- Johor, Pontian: 82007, 82009
+- Johor, Segamat: 85007, 85109, 85307, 85309
+- Johor, Senai: 81407, 81409
+- Johor, Simpang Rengam: 86207
+- Johor, Skudai: 81307
+- Johor, Tangkak: 84907, 84909
+- Johor, Ulu Tiram: 81807, 81809
+- Johor, Yong Peng: 83707
+- Kedah, Alor Setar: 05646
+- Kedah, Baling: 09109, 09120, 09130
+- Kedah, Bedong: 08107, 08109
+- Kedah, Bukit Kayu Hitam: 06060
+- Kedah, Gurun: 08307
+- Kedah, Karangan: 09500, 09709
+- Kedah, Kuala Ketil: 09309
+- Kedah, Kuala Nerang: 06309
+- Kedah, Kulim: 09090
+- Kedah, Padang Serai: 09409
+- Kedah, Relau: 09880
+- Kedah, Serdang: 09809
+- Kedah, Sungai Kechil Ilir: 09870
+- Kelantan, Bachok: 16309
+- Kelantan, Gua Musang: 18307
+- Kelantan, Jeli: 17609
+- Kelantan, Kota Bharu: 15552, 15675
+- Kelantan, Kuala Krai: 18007, 18009
+- Kelantan, Machang: 18509
+- Kelantan, Rantau Panjang: 17207
+- Kuala Lumpur, Kuala Lumpur: 50118, 50288, 50510, 50695, 50735, 50756, 50905, 52700
+- Melaka, Alor Gajah: 78007
+- Melaka, Ayer Keroh: 75459
+- Melaka, Melaka: 75500, 75502, 75503, 75504, 75505, 75506, 75508, 75510, 75512, 75514, 75516, 75517, 75518, 75519, 75532, 75536, 75538, 75540, 75542, 75546, 75550, 75551, 75552, 75560, 75564, 75566, 75570, 75572, 75576, 75578, 75582, 75584, 75586, 75590, 75592, 75594, 75596, 75600, 75604, 75606, 75608, 75609, 75612, 75620, 75622, 75623, 75626, 75628, 75630, 75632, 75646, 75648, 75664, 75670, 75672, 75673, 75674, 75676, 75690, 75700, 75710, 75720, 75730, 75740, 75750, 75760, 75900, 75902, 75904, 75906, 75908, 75910, 75912, 75914, 75916, 75918, 75990
+- Melaka, Merlimau: 77307, 77309
+- Melaka, Selandar: 77507, 77509
+- Melaka, Sungai Rambai: 77409
+- Negeri Sembilan, Seremban: 70538, 70612
+- Negeri Sembilan, Tampin: 73010
+- Pahang, Bandar Pusat Jengka: 26407, 26409
+- Pahang, Bandar Tun Abdul Razak: 26907
+- Pahang, Benta: 27307
+- Pahang, Brinchang: 39107
+- Pahang, Gambang: 26309
+- Pahang, Genting Highlands: 69009
+- Pahang, Jerantut: 27007, 27009, 27037
+- Pahang, Karak: 28609
+- Pahang, Kemayan: 28387
+- Pahang, Kuala Krau: 28057, 28059
+- Pahang, Kuala Lipis: 27109
+- Pahang, Kuala Rompin: 26807, 26809
+- Pahang, Kuantan: 25709, 26057, 26077, 26130, 26197
+- Pahang, Lanchang: 28509
+- Pahang, Maran: 26507, 26509
+- Pahang, Muadzam Shah: 26707, 26709
+- Pahang, Triang: 28309
+- Perak, Ayer Tawar: 32407
+- Perak, Bagan Serai: 34307
+- Perak, Bidor: 35507
+- Perak, Gerik: 33307
+- Perak, Kamunting: 34607
+- Perlis, Kangar: 01542, 01990
+- Pulau Pinang, Bayan Lepas: 11980, 11988
+- Pulau Pinang, Pulau Pinang: 10700
+- Putrajaya, Putrajaya: 62564, 62600, 62607, 62612, 62622, 62640, 62644
+- Sabah, Beluran: 90108
+- Sabah, Kalabakan: 91400
+- Sabah, Kota Kinabalu: 88859, 88864
+- Sabah, Kota Kinabatangan: 90208
+- Sabah, Kota Marudu: 89130, 89137, 89138, 89139
+- Sabah, Kunak: 91208
+- Sabah, Lahad Datu: 91107
+- Sabah, Ranau: 89327, 89328, 89329, 89330, 89337, 89338, 89339
+- Sabah, Sandakan: 90308, 90508, 90509, 90710
+- Sabah, Tawau: 91036, 91037, 91038, 91039, 91040, 91041, 91042, 91043, 91044, 91046, 91047, 91048, 91049, 91050, 91051, 91052, 91053, 91054, 91055
+- Sarawak, Asajaya: 94607
+- Sarawak, Bario: 98060
+- Sarawak, Bintulu: 97307
+- Sarawak, Engkilili: 95807
+- Sarawak, Gedong: 94820
+- Sarawak, Julau: 96609
+- Sarawak, Kuching: 93107, 93257, 93307, 93407, 93457, 93501, 93601, 93675
+- Sarawak, Lundu: 94111
+- Sarawak, Mukah: 96407
+- Sarawak, Niah: 98207
+- Sarawak, Sematan: 94100
+- Sarawak, Song: 96857
+- Selangor, Bandar Baru Bangi: 43657, 43659
+- Selangor, Puchong: 47107, 47109
+- Selangor, Shah Alam: 40504
+- Selangor, Subang Jaya: 47670
+- Selangor, Tanjong Karang: 45507
+- Terengganu, Kuala Terengganu: 20594, 20598, 20675

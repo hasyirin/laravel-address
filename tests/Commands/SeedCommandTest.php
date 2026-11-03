@@ -170,12 +170,12 @@ it('resolves the local country from locality config after seeding', function () 
         ->and($local->code)->toBe('MYS');
 });
 
-it('seeds every level in 33 queries', function () {
+it('seeds every level in 35 queries', function () {
     DB::enableQueryLog();
 
     $this->artisan('address:seed')->assertSuccessful();
 
-    expect(DB::getQueryLog())->toHaveCount(33);
+    expect(DB::getQueryLog())->toHaveCount(35);
 });
 
 it('reads 6 times and writes nothing when the data did not change', function () {
