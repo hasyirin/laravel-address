@@ -49,9 +49,13 @@ class Postcode extends Model
         return $this->table ?? config('address.tables.postcodes', parent::getTable());
     }
 
+    /** @return BelongsTo<PostOffice, $this> */
     public function postOffice(): BelongsTo
     {
-        return $this->belongsTo(config('address.models.post-office'));
+        /** @var class-string<PostOffice> $model */
+        $model = config('address.models.post-office');
+
+        return $this->belongsTo($model);
     }
 
     protected function code(): Attribute

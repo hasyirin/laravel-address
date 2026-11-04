@@ -20,10 +20,10 @@ use Illuminate\Support\Collection;
  * @property string $code
  * @property string $name
  * @property ?string $alpha_2
- * @property Collection $states
- * @property Collection $districts
- * @property Collection $postOffices
- * @property Collection $addresses
+ * @property Collection<int, State> $states
+ * @property Collection<int, District> $districts
+ * @property Collection<int, PostOffice> $postOffices
+ * @property Collection<int, Address> $addresses
  */
 class Country extends Model implements Localizable
 {
@@ -46,24 +46,44 @@ class Country extends Model implements Localizable
         return $this->table ?? config('address.tables.countries', parent::getTable());
     }
 
+    /** @return HasMany<State, $this> */
     public function states(): HasMany
     {
-        return $this->hasMany(config('address.models.state'), 'country_id');
+        /** @var class-string<State> $model */
+        $model = config('address.models.state');
+
+        return $this->hasMany($model, 'country_id');
     }
 
+    /** @return HasManyThrough<District, State, $this> */
     public function districts(): HasManyThrough
     {
-        return $this->hasManyThrough(config('address.models.district'), config('address.models.state'), 'country_id', 'state_id');
+        /** @var class-string<District> $model */
+        $model = config('address.models.district');
+        /** @var class-string<State> $through */
+        $through = config('address.models.state');
+
+        return $this->hasManyThrough($model, $through, 'country_id', 'state_id');
     }
 
+    /** @return HasManyThrough<PostOffice, State, $this> */
     public function postOffices(): HasManyThrough
     {
-        return $this->hasManyThrough(config('address.models.post-office'), config('address.models.state'), 'country_id', 'state_id');
+        /** @var class-string<PostOffice> $model */
+        $model = config('address.models.post-office');
+        /** @var class-string<State> $through */
+        $through = config('address.models.state');
+
+        return $this->hasManyThrough($model, $through, 'country_id', 'state_id');
     }
 
+    /** @return HasMany<Address, $this> */
     public function addresses(): HasMany
     {
-        return $this->hasMany(config('address.models.address'), 'country_id');
+        /** @var class-string<Address> $model */
+        $model = config('address.models.address');
+
+        return $this->hasMany($model, 'country_id');
     }
 
     public function scopeLocal(Builder $query): void

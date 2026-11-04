@@ -17,7 +17,7 @@ use Illuminate\Support\Collection;
  * @property int $state_id
  * @property string $name
  * @property State $state
- * @property Collection<Postcode> $postcodes
+ * @property Collection<int, Postcode> $postcodes
  */
 class PostOffice extends Model
 {
@@ -39,13 +39,21 @@ class PostOffice extends Model
         return $this->table ?? config('address.tables.post_offices', parent::getTable());
     }
 
+    /** @return BelongsTo<State, $this> */
     public function state(): BelongsTo
     {
-        return $this->belongsTo(config('address.models.state'));
+        /** @var class-string<State> $model */
+        $model = config('address.models.state');
+
+        return $this->belongsTo($model);
     }
 
+    /** @return HasMany<Postcode, $this> */
     public function postcodes(): HasMany
     {
-        return $this->hasMany(config('address.models.postcode'), 'post_office_id');
+        /** @var class-string<Postcode> $model */
+        $model = config('address.models.postcode');
+
+        return $this->hasMany($model, 'post_office_id');
     }
 }

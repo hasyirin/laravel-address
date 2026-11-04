@@ -38,8 +38,12 @@ class Subdistrict extends Model
         return $this->table ?? config('address.tables.subdistricts', parent::getTable());
     }
 
+    /** @return BelongsTo<District, $this> */
     public function district(): BelongsTo
     {
-        return $this->belongsTo(config('address.models.district'));
+        /** @var class-string<District> $model */
+        $model = config('address.models.district');
+
+        return $this->belongsTo($model);
     }
 }

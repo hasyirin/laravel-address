@@ -102,34 +102,55 @@ class Address extends Model
         });
     }
 
+    /** @return MorphTo<Model, $this> */
     public function addressable(): MorphTo
     {
         return $this->morphTo();
     }
 
+    /** @return BelongsTo<Country, $this> */
     public function country(): BelongsTo
     {
-        return $this->belongsTo(config('address.models.country'))->withoutGlobalScope(SoftDeletingScope::class);
+        /** @var class-string<Country> $model */
+        $model = config('address.models.country');
+
+        return $this->belongsTo($model)->withoutGlobalScope(SoftDeletingScope::class);
     }
 
+    /** @return BelongsTo<State, $this> */
     public function state(): BelongsTo
     {
-        return $this->belongsTo(config('address.models.state'))->withoutGlobalScope(SoftDeletingScope::class);
+        /** @var class-string<State> $model */
+        $model = config('address.models.state');
+
+        return $this->belongsTo($model)->withoutGlobalScope(SoftDeletingScope::class);
     }
 
+    /** @return BelongsTo<District, $this> */
     public function district(): BelongsTo
     {
-        return $this->belongsTo(config('address.models.district'))->withoutGlobalScope(SoftDeletingScope::class);
+        /** @var class-string<District> $model */
+        $model = config('address.models.district');
+
+        return $this->belongsTo($model)->withoutGlobalScope(SoftDeletingScope::class);
     }
 
+    /** @return BelongsTo<Subdistrict, $this> */
     public function subdistrict(): BelongsTo
     {
-        return $this->belongsTo(config('address.models.subdistrict'))->withoutGlobalScope(SoftDeletingScope::class);
+        /** @var class-string<Subdistrict> $model */
+        $model = config('address.models.subdistrict');
+
+        return $this->belongsTo($model)->withoutGlobalScope(SoftDeletingScope::class);
     }
 
+    /** @return BelongsTo<PostOffice, $this> */
     public function postOffice(): BelongsTo
     {
-        return $this->belongsTo(config('address.models.post-office'))->withoutGlobalScope(SoftDeletingScope::class);
+        /** @var class-string<PostOffice> $model */
+        $model = config('address.models.post-office');
+
+        return $this->belongsTo($model)->withoutGlobalScope(SoftDeletingScope::class);
     }
 
     public function scopeOfType(Builder $query, Arrayable|BackedEnum|UnitEnum|array|string $type): void

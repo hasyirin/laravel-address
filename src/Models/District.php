@@ -21,7 +21,7 @@ use Illuminate\Support\Collection;
  * @property string $code
  * @property string $name
  * @property State $state
- * @property Collection<Subdistrict> $subdistricts
+ * @property Collection<int, Subdistrict> $subdistricts
  */
 class District extends Model implements Localizable
 {
@@ -44,14 +44,22 @@ class District extends Model implements Localizable
         return $this->table ?? config('address.tables.districts', parent::getTable());
     }
 
+    /** @return BelongsTo<State, $this> */
     public function state(): BelongsTo
     {
-        return $this->belongsTo(config('address.models.state'));
+        /** @var class-string<State> $model */
+        $model = config('address.models.state');
+
+        return $this->belongsTo($model);
     }
 
+    /** @return HasMany<Subdistrict, $this> */
     public function subdistricts(): HasMany
     {
-        return $this->hasMany(config('address.models.subdistrict'), 'district_id');
+        /** @var class-string<Subdistrict> $model */
+        $model = config('address.models.subdistrict');
+
+        return $this->hasMany($model, 'district_id');
     }
 
     public function scopeLocal(Builder $query): void

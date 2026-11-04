@@ -21,8 +21,8 @@ use Illuminate\Support\Collection;
  * @property string $code
  * @property string $name
  * @property Country $country
- * @property Collection $districts
- * @property Collection $addresses
+ * @property Collection<int, District> $districts
+ * @property Collection<int, Address> $addresses
  */
 class State extends Model implements Localizable
 {
@@ -45,24 +45,40 @@ class State extends Model implements Localizable
         return $this->table ?? config('address.tables.states', parent::getTable());
     }
 
+    /** @return BelongsTo<Country, $this> */
     public function country(): BelongsTo
     {
-        return $this->belongsTo(config('address.models.country'));
+        /** @var class-string<Country> $model */
+        $model = config('address.models.country');
+
+        return $this->belongsTo($model);
     }
 
+    /** @return HasMany<District, $this> */
     public function districts(): HasMany
     {
-        return $this->hasMany(config('address.models.district'), 'state_id');
+        /** @var class-string<District> $model */
+        $model = config('address.models.district');
+
+        return $this->hasMany($model, 'state_id');
     }
 
+    /** @return HasMany<PostOffice, $this> */
     public function postOffices(): HasMany
     {
-        return $this->hasMany(config('address.models.post-office'), 'state_id');
+        /** @var class-string<PostOffice> $model */
+        $model = config('address.models.post-office');
+
+        return $this->hasMany($model, 'state_id');
     }
 
+    /** @return HasMany<Address, $this> */
     public function addresses(): HasMany
     {
-        return $this->hasMany(config('address.models.address'), 'state_id');
+        /** @var class-string<Address> $model */
+        $model = config('address.models.address');
+
+        return $this->hasMany($model, 'state_id');
     }
 
     public function scopeLocal(Builder $query): void
