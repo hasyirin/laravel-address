@@ -12,6 +12,7 @@ class CountryFactory extends Factory
 {
     public function modelName(): string
     {
+        /** @var class-string<Country> */
         return config('address.models.country', Country::class);
     }
 

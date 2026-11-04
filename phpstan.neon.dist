@@ -2,7 +2,7 @@ includes:
     - phpstan-baseline.neon
 
 parameters:
-    level: 5
+    level: 10
     paths:
         - src
         - config
@@ -12,3 +12,9 @@ parameters:
     tmpDir: build/phpstan
     checkOctaneCompatibility: true
     checkModelProperties: true
+    ignoreErrors:
+        # The seeder works with any configured model and takes its columns as arguments.
+        -
+            message: '#model property of Illuminate\\Database\\Eloquent\\Model#'
+            identifier: argument.type
+            path: src/Commands/SeedCommand.php

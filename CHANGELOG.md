@@ -2,6 +2,22 @@
 
 All notable changes to `laravel-address` will be documented in this file.
 
+## v5.3.0
+
+### Added
+
+- Relation methods have generic return types, for example `address()` returns `MorphOne<Address, $this>`. With Larastan, `$user->address()->updateOrCreate(...)` now has the type `Address` instead of `Model`
+- Collection properties have key and value types, for example `Collection<int, Postcode>`
+- `Localizable` is generic over its model, and `Country`, `State`, and `District` implement `Localizable<Country>`, `Localizable<State>`, and `Localizable<District>`
+- The package passes PHPStan level 10
+
+### Changed
+
+- `ofType()` throws `InvalidArgumentException` for a type that is not a string, a number, or an enum. Before, it failed with a PHP error
+- A locality code in `address.locality` that is not a string or a number throws `InvalidArgumentException`. Before, it failed with a PHP error
+- `address:seed` throws `RuntimeException` when a model in `address.models` is not an Eloquent model
+- The protected methods of `SeedCommand` accept `int|string` ids and keys. `read()` returns its rows keyed by their key value
+
 ## v5.2.0
 
 ### Added

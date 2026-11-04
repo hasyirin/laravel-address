@@ -13,6 +13,7 @@ class DistrictFactory extends Factory
 {
     public function modelName(): string
     {
+        /** @var class-string<District> */
         return config('address.models.district', District::class);
     }
 

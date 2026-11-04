@@ -13,9 +13,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Stringable;
+use InvalidArgumentException;
 use UnitEnum;
-
-use function Illuminate\Support\enum_value;
 
 /**
  * @property int $id
@@ -33,7 +32,7 @@ use function Illuminate\Support\enum_value;
  * @property ?string $postcode
  * @property ?float $latitude
  * @property ?float $longitude
- * @property array $properties
+ * @property array<string, mixed> $properties
  * @property Model $addressable
  * @property ?Country $country
  * @property ?State $state
@@ -82,7 +81,7 @@ class Address extends Model
 
     public function getTable(): string
     {
-        return $this->table ?? config('address.tables.addresses', parent::getTable());
+        return $this->table ?? config()->string('address.tables.addresses', parent::getTable());
     }
 
     protected static function boot(): void
@@ -153,9 +152,24 @@ class Address extends Model
         return $this->belongsTo($model)->withoutGlobalScope(SoftDeletingScope::class);
     }
 
+    /**
+     * @param  Builder<static>  $query
+     * @param  Arrayable<array-key, string|UnitEnum>|array<array-key, string|UnitEnum>|string|UnitEnum  $type
+     */
     public function scopeOfType(Builder $query, Arrayable|BackedEnum|UnitEnum|array|string $type): void
     {
-        $query->whereIn($query->qualifyColumn('type'), collect($type)->map(fn (mixed $value) => (string) enum_value($value)));
+        $types = match (true) {
+            is_string($type), $type instanceof UnitEnum => [$type],
+            is_array($type) => $type,
+            default => $type->toArray(),
+        };
+
+        $query->whereIn($query->qualifyColumn('type'), array_map(fn (mixed $value) => match (true) {
+            $value instanceof BackedEnum => (string) $value->value,
+            $value instanceof UnitEnum => $value->name,
+            is_scalar($value) => (string) $value,
+            default => throw new InvalidArgumentException('An address type must be a string, a number, or an enum.'),
+        }, $types));
     }
 
     /**
@@ -163,19 +177,27 @@ class Address extends Model
      */
     public function lines(bool $state = true, bool $country = true, bool $capitalize = false): array
     {
-        $clean = fn (?string $value) => (string) str($value)->trim()->rtrim(', ');
-        $filled = fn (array $parts) => array_values(array_filter(array_map($clean, $parts), fn (string $part) => $part !== ''));
-
-        $lines = $filled([
+        $lines = self::filled([
             $this->line_1,
             $this->line_2,
             $this->line_3,
-            implode(' ', $filled([$this->postcode, $this->postOffice?->name])),
+            implode(' ', self::filled([$this->postcode, $this->postOffice?->name])),
             $state ? $this->state?->name : null,
             $country ? $this->country?->name : null,
         ]);
 
         return $capitalize ? array_map(mb_strtoupper(...), $lines) : $lines;
+    }
+
+    /**
+     * @param  list<?string>  $parts
+     * @return list<string>
+     */
+    private static function filled(array $parts): array
+    {
+        $cleaned = array_map(fn (?string $part) => (string) str($part)->trim()->rtrim(', '), $parts);
+
+        return array_values(array_filter($cleaned, fn (string $part) => $part !== ''));
     }
 
     public function formatted(string $separator = ', ', bool $state = true, bool $country = true, bool $capitalize = false): string

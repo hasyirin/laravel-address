@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace Hasyirin\Address\Concerns;
 
+use BackedEnum;
 use Hasyirin\Address\Models\Address;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use UnitEnum;
-
-use function Illuminate\Support\enum_value;
 
 trait InteractsWithAddresses
 {
@@ -27,7 +26,11 @@ trait InteractsWithAddresses
     {
         /** @var class-string<Address> $model */
         $model = config('address.models.address');
-        $type = (string) enum_value($type);
+        $type = match (true) {
+            $type instanceof BackedEnum => (string) $type->value,
+            $type instanceof UnitEnum => $type->name,
+            default => $type,
+        };
 
         return $this->morphOne($model, 'addressable')
             ->withDefault(['type' => $type])

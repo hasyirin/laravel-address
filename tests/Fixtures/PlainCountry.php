@@ -10,6 +10,6 @@ class PlainCountry extends Model
 
     public function getTable(): string
     {
-        return config('address.tables.countries');
+        return config()->string('address.tables.countries');
     }
 }

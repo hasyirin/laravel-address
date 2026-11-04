@@ -12,6 +12,7 @@ class AddressFactory extends Factory
 {
     public function modelName(): string
     {
+        /** @var class-string<Address> */
         return config('address.models.address', Address::class);
     }
 

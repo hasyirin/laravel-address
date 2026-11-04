@@ -2,6 +2,7 @@
 
 namespace Hasyirin\Address\Commands;
 
+use ArrayObject;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
@@ -21,33 +22,50 @@ class SeedCommand extends Command
 
     public function handle(): int
     {
-        $country = config('address.models.country');
+        $country = $this->model('country');
 
         new $country()->getConnection()->transaction(function () use ($country) {
             $countries = $this->seed($this->rows(['' => null], 'countries', 'code'), $country, null, 'code', ['name', 'alpha_2']);
 
-            $states = $this->seed($this->rows($countries, 'states', 'code'), config('address.models.state'), 'country_id', 'code', ['name']);
+            $states = $this->seed($this->rows($countries, 'states', 'code'), $this->model('state'), 'country_id', 'code', ['name']);
 
             $postOffices = $this->rows($states, 'post-offices', 'name');
 
-            $postOfficeIds = $this->seed($postOffices, config('address.models.post-office'), 'state_id', 'name', []);
+            $postOfficeIds = $this->seed($postOffices, $this->model('post-office'), 'state_id', 'name', []);
 
-            $this->seed($this->postcodes($postOffices, $postOfficeIds), config('address.models.postcode'), 'post_office_id', 'code', [], hasChildren: false);
+            $this->seed($this->postcodes($postOffices, $postOfficeIds), $this->model('postcode'), 'post_office_id', 'code', [], hasChildren: false);
 
-            $districts = $this->seed($this->rows($states, 'districts', 'code'), config('address.models.district'), 'state_id', 'code', ['name']);
+            $districts = $this->seed($this->rows($states, 'districts', 'code'), $this->model('district'), 'state_id', 'code', ['name']);
 
-            $this->seed($this->rows($districts, 'subdistricts', 'code'), config('address.models.subdistrict'), 'district_id', 'code', ['name'], hasChildren: false);
+            $this->seed($this->rows($districts, 'subdistricts', 'code'), $this->model('subdistrict'), 'district_id', 'code', ['name'], hasChildren: false);
         });
 
-        app('address.locality')->exchangeArray([]);
+        /** @var ArrayObject<string, mixed> $locality */
+        $locality = app('address.locality');
+        $locality->exchangeArray([]);
 
         return self::SUCCESS;
     }
 
     /**
-     * @param  array<string, array{int|null, array<string, mixed>}>  $rows
+     * @return class-string<Model>
+     */
+    protected function model(string $name): string
+    {
+        $model = config("address.models.$name");
+
+        if (! is_string($model) || ! is_a($model, Model::class, true)) {
+            throw new RuntimeException("[address.models.$name] must name an Eloquent model.");
+        }
+
+        return $model;
+    }
+
+    /**
+     * @param  array<string, array{int|string|null, array<string, mixed>}>  $rows
+     * @param  class-string<Model>  $model
      * @param  array<int, string>  $columns
-     * @return array<string, int>
+     * @return array<string, int|string>
      */
     protected function seed(array $rows, string $model, ?string $foreignKey, string $key, array $columns, bool $hasChildren = true): array
     {
@@ -111,8 +129,13 @@ class SeedCommand extends Command
         $ids = [];
 
         foreach ($uniqueKeys as $path => $unique) {
-            $ids[$path] = $existing->get($unique)?->getKey()
-                ?? throw new RuntimeException("Found no row for [$path] after seeding. Its key may differ from another row's key only in case, accents, or trailing spaces.");
+            $id = $existing->get($unique)?->getKey();
+
+            if (! is_int($id) && ! is_string($id)) {
+                throw new RuntimeException("Found no row for [$path] after seeding. Its key may differ from another row's key only in case, accents, or trailing spaces.");
+            }
+
+            $ids[$path] = $id;
         }
 
         return $ids;
@@ -124,30 +147,34 @@ class SeedCommand extends Command
      */
     protected function uniqueKey(array $attributes, array $uniqueBy): string
     {
-        return implode("\0", array_map(fn (string $column) => $attributes[$column], $uniqueBy));
+        return implode("\0", array_map(fn (string $column) => is_scalar($value = $attributes[$column] ?? null) ? (string) $value : '', $uniqueBy));
     }
 
     /**
+     * @param  class-string<Model>  $model
      * @param  array<int, mixed>  $values
      * @return Collection<int, Model>
      */
     protected function existing(string $model, string $column, array $values): Collection
     {
-        return collect(array_chunk(array_values(array_unique($values)), 1000))
-            ->flatMap(fn (array $chunk) => $model::query()->withoutGlobalScopes()->whereIn($column, $chunk)->get());
+        $keys = array_unique(array_filter($values, fn (mixed $value) => is_int($value) || is_string($value)));
+
+        return collect(array_chunk(array_values($keys), 1000))
+            ->flatMap(fn (array $chunk) => $model::query()->withoutGlobalScopes()->whereIn($column, $chunk)->get())
+            ->values();
     }
 
     /**
-     * @param  array<string, int|null>  $parents
-     * @return array<string, array{int|null, array<string, mixed>}>
+     * @param  array<string, int|string|null>  $parents
+     * @return array<string, array{int|string|null, array<string, mixed>}>
      */
     protected function rows(array $parents, string $name, string $key): array
     {
         $rows = [];
 
         foreach ($parents as $path => $parentId) {
-            foreach ($this->read(ltrim("$path/$name.json", '/'), $key) as $row) {
-                $rows[ltrim("$path/$name/{$row[$key]}", '/')] = [$parentId, $row];
+            foreach ($this->read(ltrim("$path/$name.json", '/'), $key) as $id => $row) {
+                $rows[ltrim("$path/$name/$id", '/')] = [$parentId, $row];
             }
         }
 
@@ -155,9 +182,9 @@ class SeedCommand extends Command
     }
 
     /**
-     * @param  array<string, array{int|null, array<string, mixed>}>  $postOffices
-     * @param  array<string, int>  $ids
-     * @return array<string, array{int, array{code: string}}>
+     * @param  array<string, array{int|string|null, array<string, mixed>}>  $postOffices
+     * @param  array<string, int|string>  $ids
+     * @return array<string, array{int|string, array{code: int|string}}>
      */
     protected function postcodes(array $postOffices, array $ids): array
     {
@@ -166,10 +193,11 @@ class SeedCommand extends Command
         foreach ($postOffices as $path => [, $postOffice]) {
             $codes = $postOffice['postcodes'] ?? [];
 
-            if (! is_array($codes) || ! collect($codes)->every($this->isKey(...))) {
+            if (! is_array($codes) || array_filter($codes, fn (mixed $code) => ! $this->isKey($code)) !== []) {
                 throw new RuntimeException("Invalid [postcodes] in [$path]");
             }
 
+            /** @var array<int|string> $codes */
             foreach ($codes as $code) {
                 $rows["$path/postcodes/$code"] = [$ids[$path], ['code' => $code]];
             }
@@ -179,29 +207,39 @@ class SeedCommand extends Command
     }
 
     /**
-     * @return Collection<int, array<string, mixed>>
+     * @return Collection<int|string, array<string, mixed>>
      */
     protected function read(string $file, string $key): Collection
     {
         $path = "$this->path/$file";
+        $json = is_file($path) ? file_get_contents($path) : false;
+        $decoded = [];
 
-        if (! is_file($path) || trim($json = file_get_contents($path)) === '') {
-            return collect();
+        if ($json !== false && trim($json) !== '') {
+            try {
+                $decoded = json_decode($json, true, flags: JSON_THROW_ON_ERROR);
+            } catch (JsonException $e) {
+                throw new RuntimeException("Invalid JSON in [$path]: {$e->getMessage()}", previous: $e);
+            }
         }
 
-        try {
-            $rows = collect(json_decode($json, true, flags: JSON_THROW_ON_ERROR));
-        } catch (JsonException $e) {
-            throw new RuntimeException("Invalid JSON in [$path]: {$e->getMessage()}", previous: $e);
-        }
+        $rows = [];
 
-        return $rows->each(function (mixed $row) use ($key, $path) {
-            if (! $this->isKey($row[$key] ?? null)) {
+        foreach (is_array($decoded) ? $decoded : [$decoded] as $row) {
+            if (! is_array($row) || ! $this->isKey($id = $row[$key] ?? null)) {
                 throw new RuntimeException("Missing [$key] in [$path]");
             }
-        });
+
+            /** @var array<string, mixed> $row */
+            $rows[$id] = $row;
+        }
+
+        return collect($rows);
     }
 
+    /**
+     * @phpstan-assert-if-true int|string $value
+     */
     protected function isKey(mixed $value): bool
     {
         return (is_string($value) || is_int($value)) && ! blank($value);

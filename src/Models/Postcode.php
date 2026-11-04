@@ -46,7 +46,7 @@ class Postcode extends Model
 
     public function getTable(): string
     {
-        return $this->table ?? config('address.tables.postcodes', parent::getTable());
+        return $this->table ?? config()->string('address.tables.postcodes', parent::getTable());
     }
 
     /** @return BelongsTo<PostOffice, $this> */
@@ -58,6 +58,7 @@ class Postcode extends Model
         return $this->belongsTo($model);
     }
 
+    /** @return Attribute<never, string> */
     protected function code(): Attribute
     {
         return Attribute::set(fn (string $value) => (string) str($value)->squish()->upper());

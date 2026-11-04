@@ -167,3 +167,9 @@ it('runs no query when a locality code is not set', function () {
         ->and(District::local())->toBeNull()
         ->and(DB::getQueryLog())->toBe([]);
 });
+
+it('rejects a locality code that is not a string or a number', function () {
+    config(['address.locality.country' => ['MYS']]);
+
+    Country::local();
+})->throws(InvalidArgumentException::class, '[address.locality.country] must be a string or a number.');

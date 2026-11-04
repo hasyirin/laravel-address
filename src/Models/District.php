@@ -22,6 +22,8 @@ use Illuminate\Support\Collection;
  * @property string $name
  * @property State $state
  * @property Collection<int, Subdistrict> $subdistricts
+ *
+ * @implements Localizable<District>
  */
 class District extends Model implements Localizable
 {
@@ -41,7 +43,7 @@ class District extends Model implements Localizable
 
     public function getTable(): string
     {
-        return $this->table ?? config('address.tables.districts', parent::getTable());
+        return $this->table ?? config()->string('address.tables.districts', parent::getTable());
     }
 
     /** @return BelongsTo<State, $this> */
@@ -62,6 +64,7 @@ class District extends Model implements Localizable
         return $this->hasMany($model, 'district_id');
     }
 
+    /** @param Builder<District> $query */
     public function scopeLocal(Builder $query): void
     {
         $query->where($query->qualifyColumn('code'), static::localityCode('district'))

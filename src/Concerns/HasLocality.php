@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Hasyirin\Address\Concerns;
 
+use ArrayObject;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 
 trait HasLocality
 {
@@ -49,7 +51,7 @@ trait HasLocality
         $model = $query->getModel();
         $connection = $model->getConnection();
 
-        $memo = app('address.locality');
+        $memo = static::localityMemo();
         $key = static::localityMemoKey($connection);
 
         // The memo stores attributes so that callers never share one model instance.
@@ -69,14 +71,27 @@ trait HasLocality
 
     public static function clearLocalCache(): void
     {
-        app('address.locality')->exchangeArray([]);
+        static::localityMemo()->exchangeArray([]);
+    }
+
+    /**
+     * @return ArrayObject<string, array<string, mixed>>
+     */
+    protected static function localityMemo(): ArrayObject
+    {
+        /** @var ArrayObject<string, array<string, mixed>> */
+        return app('address.locality');
     }
 
     protected static function localityCode(string $level): ?string
     {
         $code = config("address.locality.$level");
 
-        return $code === null ? null : (string) $code;
+        return match (true) {
+            $code === null => null,
+            is_scalar($code) => (string) $code,
+            default => throw new InvalidArgumentException("[address.locality.$level] must be a string or a number."),
+        };
     }
 
     /**
@@ -101,6 +116,6 @@ trait HasLocality
             $connection->getDatabaseName(),
             $connection->getTablePrefix(),
             $connection->getConfig('search_path'),
-        ]);
+        ], JSON_THROW_ON_ERROR);
     }
 }

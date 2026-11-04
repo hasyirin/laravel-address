@@ -24,6 +24,8 @@ use Illuminate\Support\Collection;
  * @property Collection<int, District> $districts
  * @property Collection<int, PostOffice> $postOffices
  * @property Collection<int, Address> $addresses
+ *
+ * @implements Localizable<Country>
  */
 class Country extends Model implements Localizable
 {
@@ -43,7 +45,7 @@ class Country extends Model implements Localizable
 
     public function getTable(): string
     {
-        return $this->table ?? config('address.tables.countries', parent::getTable());
+        return $this->table ?? config()->string('address.tables.countries', parent::getTable());
     }
 
     /** @return HasMany<State, $this> */
@@ -86,6 +88,7 @@ class Country extends Model implements Localizable
         return $this->hasMany($model, 'country_id');
     }
 
+    /** @param Builder<Country> $query */
     public function scopeLocal(Builder $query): void
     {
         $query->where($query->qualifyColumn('code'), static::localityCode('country'));

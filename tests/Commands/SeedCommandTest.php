@@ -449,3 +449,10 @@ it('updates a soft-deleted row and keeps it deleted', function () {
     expect($country->name)->toBe('New Testland')
         ->and($country->trashed())->toBeTrue();
 });
+
+it('rejects a configured model that is not an Eloquent model', function () {
+    config()->set('address.models.state', stdClass::class);
+
+    expect(fn () => $this->artisan('address:seed')->run())
+        ->toThrow(RuntimeException::class, '[address.models.state] must name an Eloquent model.');
+});

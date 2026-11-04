@@ -515,6 +515,14 @@ it('binds enum types as strings', function () {
         ->and(Address::ofType([AddressType::Billing, 'primary'])->getBindings())->toBe(['billing', 'primary']);
 });
 
+it('scopes by the types in an arrayable', function () {
+    expect(Address::ofType(collect([AddressType::Billing, 'primary', 3]))->getBindings())->toBe(['billing', 'primary', '3']);
+});
+
+it('rejects a type that is not a string, number, or enum', function () {
+    Address::ofType([['primary']]);
+})->throws(InvalidArgumentException::class);
+
 // -- soft deletes --
 
 it('supports soft deletes', function () {

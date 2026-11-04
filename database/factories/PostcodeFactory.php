@@ -13,6 +13,7 @@ class PostcodeFactory extends Factory
 {
     public function modelName(): string
     {
+        /** @var class-string<Postcode> */
         return config('address.models.postcode', Postcode::class);
     }
 

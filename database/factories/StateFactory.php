@@ -13,6 +13,7 @@ class StateFactory extends Factory
 {
     public function modelName(): string
     {
+        /** @var class-string<State> */
         return config('address.models.state', State::class);
     }
 

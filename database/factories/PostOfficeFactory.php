@@ -13,6 +13,7 @@ class PostOfficeFactory extends Factory
 {
     public function modelName(): string
     {
+        /** @var class-string<PostOffice> */
         return config('address.models.post-office', PostOffice::class);
     }
 

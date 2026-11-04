@@ -36,7 +36,7 @@ class PostOffice extends Model
 
     public function getTable(): string
     {
-        return $this->table ?? config('address.tables.post_offices', parent::getTable());
+        return $this->table ?? config()->string('address.tables.post_offices', parent::getTable());
     }
 
     /** @return BelongsTo<State, $this> */

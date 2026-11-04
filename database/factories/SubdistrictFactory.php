@@ -13,6 +13,7 @@ class SubdistrictFactory extends Factory
 {
     public function modelName(): string
     {
+        /** @var class-string<Subdistrict> */
         return config('address.models.subdistrict', Subdistrict::class);
     }
 
