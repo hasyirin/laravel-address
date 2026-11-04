@@ -154,7 +154,7 @@ class Address extends Model
 
     /**
      * @param  Builder<static>  $query
-     * @param  Arrayable<array-key, string|UnitEnum>|array<array-key, string|UnitEnum>|string|UnitEnum  $type
+     * @param  Arrayable<array-key, mixed>|array<array-key, mixed>|string|UnitEnum  $type
      */
     public function scopeOfType(Builder $query, Arrayable|BackedEnum|UnitEnum|array|string $type): void
     {

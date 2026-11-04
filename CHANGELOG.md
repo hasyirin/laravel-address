@@ -2,6 +2,16 @@
 
 All notable changes to `laravel-address` will be documented in this file.
 
+## v5.3.1
+
+### Fixed
+
+- The `ofType()` docblock types its values as `mixed`, because the method checks them at runtime. PHPStan passes with Larastan 3.14 again
+
+### Changed
+
+- The dev dependencies require their latest versions, for example Larastan 3.14 and Pest 5.3. The runtime requirements do not change
+
 ## v5.3.0
 
 ### Added
