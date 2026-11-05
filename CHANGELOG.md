@@ -2,6 +2,12 @@
 
 All notable changes to `laravel-address` will be documented in this file.
 
+## v5.4.0
+
+### Added
+
+- `PostOffice` has a `local()` query scope. It keeps the post offices of the local state, and it checks the state code and the country code in `address.locality`, the same as `State::query()->local()`. If one of these codes is `null`, it finds no rows
+
 ## v5.3.1
 
 ### Fixed

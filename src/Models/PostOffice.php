@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Hasyirin\Address\Models;
 
 use Hasyirin\Address\Database\Factories\PostOfficeFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -55,5 +56,11 @@ class PostOffice extends Model
         $model = config('address.models.postcode');
 
         return $this->hasMany($model, 'post_office_id');
+    }
+
+    /** @param Builder<PostOffice> $query */
+    public function scopeLocal(Builder $query): void
+    {
+        $query->whereHas('state', fn (Builder $state) => $state->local());
     }
 }

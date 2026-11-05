@@ -225,6 +225,14 @@ Writes that skip model events, such as query builder updates, `upsert()`, or `sa
 Country::clearLocalCache();
 ```
 
+`PostOffice` has the `local()` query scope too. A post office has no locality code, so the scope keeps the post offices whose state is the local state, through the same state code and country code as `State::query()->local()`. The scope keeps no result between calls. If the state code or the country code is `null`, the scope finds no rows:
+
+```php
+PostOffice::query()->local()->orderBy('name')->get();
+```
+
+`PostOffice` has no static `local()` helper. `PostOffice::local()` calls the scope and returns a query builder, not a `?PostOffice`.
+
 ## Postcodes
 
 Each `PostOffice` has many `Postcode` rows. One postcode can belong to more than one post office, because a postcode can cover more than one town.
